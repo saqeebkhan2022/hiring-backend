@@ -1,12 +1,27 @@
 // index.js
-const express = require("express");
-const app = express();
-const PORT = 3000;
+require("dotenv").config();
 
-app.get("/", (req, res) => {
-  res.send("Hello, Node!");
-});
+const app = require("./app"); // Express app with routes/middleware
+const { sequelize } = require("./models"); // Load Sequelize instance via models/index.js
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+
+(async () => {
+  try {
+    // Test DB connection
+    await sequelize.authenticate();
+    console.log("✅ PostgreSQL connected successfully.");
+
+    // Sync models to DB (create/alter tables as needed) - dev use only!
+    await sequelize.sync({ alter: true });
+    console.log("✅ All models synchronized.");
+
+    // Start server
+    app.listen(PORT, () => {
+      console.log(`✅ Server running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Unable to start server or connect to DB:", error);
+    process.exit(1);
+  }
+})();
