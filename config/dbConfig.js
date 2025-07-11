@@ -1,4 +1,3 @@
-// config/dbConfig.js
 const { Sequelize } = require("sequelize");
 require("dotenv").config();
 
@@ -14,7 +13,6 @@ const sequelize = new Sequelize(
   }
 );
 
-// Test DB connection
 sequelize
   .authenticate()
   .then(() => {

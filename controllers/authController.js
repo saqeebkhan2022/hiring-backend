@@ -5,8 +5,6 @@ const { User, Role } = require("../models");
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // 🔍 Find user with role
     const user = await User.findOne({
       where: { email },
       include: { model: Role, attributes: ["name"] },
@@ -16,13 +14,11 @@ const login = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 🔐 Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid password" });
     }
 
-    // 🎟️ Generate token
     const token = jwt.sign(
       { userId: user.id, role: user.Role.name },
       process.env.JWT_SECRET,
