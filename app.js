@@ -5,6 +5,15 @@ const consultant = require("./routes/consultantRoutes");
 const authRoutes = require("./routes/authRoutes");
 
 const app = express();
+
+require("dotenv").config();
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  })
+);
+
 app.use(cors());
 app.use(express.json());
 
