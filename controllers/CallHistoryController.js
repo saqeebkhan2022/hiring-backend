@@ -1,7 +1,7 @@
 const { CallHistory } = require("../models");
 
 // Get all leads
-exports.getAllLeads = async (req, res) => {
+const getAllLeads = async (req, res) => {
   try {
     const leads = await CallHistory.findAll();
     res.status(200).json(leads);
@@ -11,7 +11,7 @@ exports.getAllLeads = async (req, res) => {
 };
 
 // Create a new lead
-exports.createLead = async (req, res) => {
+const createLead = async (req, res) => {
   try {
     const newLead = await CallHistory.create(req.body);
     res.status(201).json(newLead);
@@ -21,7 +21,7 @@ exports.createLead = async (req, res) => {
 };
 
 // Get single lead by ID
-exports.getLeadById = async (req, res) => {
+const getLeadById = async (req, res) => {
   try {
     const lead = await CallHistory.findByPk(req.params.id);
     if (!lead) return res.status(404).json({ error: "Lead not found" });
@@ -32,7 +32,7 @@ exports.getLeadById = async (req, res) => {
 };
 
 // Update lead by ID
-exports.updateLead = async (req, res) => {
+const updateLead = async (req, res) => {
   try {
     const lead = await CallHistory.findByPk(req.params.id);
     if (!lead) return res.status(404).json({ error: "Lead not found" });
@@ -44,7 +44,7 @@ exports.updateLead = async (req, res) => {
 };
 
 // Delete lead by ID
-exports.deleteLead = async (req, res) => {
+const deleteLead = async (req, res) => {
   try {
     const lead = await CallHistory.findByPk(req.params.id);
     if (!lead) return res.status(404).json({ error: "Lead not found" });
@@ -53,4 +53,12 @@ exports.deleteLead = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+};
+
+module.exports = {
+  getAllLeads,
+  createLead,
+  updateLead,
+  deleteLead,
+  getLeadById,
 };
