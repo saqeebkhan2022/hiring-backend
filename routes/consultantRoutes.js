@@ -2,7 +2,10 @@ const express = require("express");
 const router = express.Router();
 const consultantController = require("../controllers/ConsultantController");
 
-router.post("/", consultantController.default.AddConsultant);
-router.get("/", consultantController.default.AllConsultant);
+// Create consultant (also creates user)
+router.post("/add", consultantController.AddConsultant);
+
+// Get all consultants with user info
+router.get("/all", consultantController.AllConsultant);
 
 module.exports = router;

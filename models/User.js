@@ -1,17 +1,22 @@
 "use strict";
-const { Model } = require("sequelize");
+const { Model, DataTypes } = require("sequelize");
 
-module.exports = (sequelize, DataTypes) => {
+module.exports = (sequelize) => {
   class User extends Model {
     static associate(models) {
-      // ✅ User belongs to Role
       User.belongsTo(models.Role, {
-        foreignKey: { allowNull: false },
+        foreignKey: {
+          name: "RoleId",
+          allowNull: false,
+        },
         onDelete: "CASCADE",
       });
 
-      // ✅ User has one Consultant
       User.hasOne(models.Consultant, {
+        foreignKey: {
+          name: "userId",
+          allowNull: false,
+        },
         onDelete: "CASCADE",
       });
     }
@@ -19,6 +24,11 @@ module.exports = (sequelize, DataTypes) => {
 
   User.init(
     {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
       name: {
         type: DataTypes.STRING,
         allowNull: false,
