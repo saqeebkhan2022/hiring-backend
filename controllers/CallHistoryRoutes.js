@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const CallHistoryController = require("../controllers/CallHistoryController");
+const CallHistoryController = require("./CallHistoryController");
 
 // Routes for Call History
 router.get("/", CallHistoryController.getAllCallHistory);

@@ -8,7 +8,8 @@ const CallHistoryRoutes = require("./routes/CallHistoryRoutes");
 const leadRoutes = require("./routes/LeadRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 const userRoutes = require("./routes/userRoutes");
-const LeadAssignmentRoutes = require("./routes/leadAssignmentRoutes")
+const LeadAssignmentRoutes = require("./routes/leadAssignmentRoutes");
+const applyToJob = require("./routes/jobApplicationRoutes");
 
 const app = express();
 
@@ -25,8 +26,9 @@ app.use(express.json());
 
 app.use("/api/consultant", consultant);
 app.use("/api/auth", authRoutes);
-app.use("/api/user",userRoutes)
+app.use("/api/user", userRoutes);
 app.use("/api", jobRoutes);
+app.use("/api", applyToJob);
 app.use("/api/callhistory", CallHistoryRoutes);
 app.use("/api/leads", leadRoutes);
 app.use("/api/lead-assignment", LeadAssignmentRoutes);
