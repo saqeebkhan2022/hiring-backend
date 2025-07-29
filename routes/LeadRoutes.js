@@ -2,7 +2,14 @@ const express = require("express");
 const router = express.Router();
 const LeadController = require("../controllers/LeadController");
 
-router.get("/", LeadController.getAllLeads);
+router.post("/", LeadController.createLead);
+router.get("/count", LeadController.TotalLeadCount);
+router.get("/:id", LeadController.getLeadById);
+router.get("/", LeadController.getAllLeads);              
+router.put("/:id", LeadController.updateLead);            
+router.delete("/:id", LeadController.deleteLead);         
 router.post("/assign", LeadController.assignLeadsToConsultant);
+router.get("/count", LeadController.TotalLeadCount);
+
 
 module.exports = router;

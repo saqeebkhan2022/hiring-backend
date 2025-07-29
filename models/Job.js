@@ -13,11 +13,20 @@ module.exports = (sequelize, DataTypes) => {
 
   Job.init(
     {
+       id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
       jobTitle: {
         type: DataTypes.STRING,
         allowNull: false,
       },
       company: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+       quantity: {
         type: DataTypes.STRING,
         allowNull: false,
       },
@@ -29,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
       },
       salaryRange: {
-        type: DataTypes.STRING, // Example: "2500 - 3500"
+        type: DataTypes.STRING, 
       },
       jobType: {
         type: DataTypes.STRING,

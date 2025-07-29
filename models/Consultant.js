@@ -4,8 +4,15 @@ const { Model, DataTypes } = require("sequelize");
 module.exports = (sequelize) => {
   class Consultant extends Model {
     static associate(models) {
+      // Consultant belongs to a user
       Consultant.belongsTo(models.User, {
         foreignKey: "userId",
+        onDelete: "CASCADE",
+      });
+
+      // Consultant has many CallHistories
+      Consultant.hasMany(models.CallHistory, {
+        foreignKey: "consultantId",
         onDelete: "CASCADE",
       });
     }
@@ -33,7 +40,7 @@ module.exports = (sequelize) => {
       phone: DataTypes.STRING,
       photo: DataTypes.STRING,
       aadhar: DataTypes.STRING,
-      pan: DataTypes.STRING,
+      pan: DataTypes.STRING,  
       signature: DataTypes.STRING,
       policeClearance: DataTypes.STRING,
       verified: {

@@ -34,7 +34,7 @@ const AddConsultant = async (req, res) => {
 
     // 2️⃣ Find Consultant RoleId
     const consultantRole = await Role.findOne({
-      where: { name: "Consultant" },
+      where: { name: "admin" },
       transaction,
     });
     if (!consultantRole) {
@@ -101,7 +101,81 @@ const AllConsultant = async (req, res) => {
   }
 };
 
+// ✅ Get consultant by ID
+const GetConsultantById = async (req, res) => {
+  try {
+    const consultant = await Consultant.findByPk(req.params.id, {
+      include: {
+        model: User,
+        attributes: ["id", "name", "email", "verified"],
+      },
+    });
+
+    if (!consultant) {
+      return res.status(404).json({ message: "Consultant not found" });
+    }
+
+    res.status(200).json({ consultant });
+  } catch (err) {
+    console.error("Error fetching consultant:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// ✅ Update consultant by ID
+const UpdateConsultant = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updates = req.body;
+
+    const consultant = await Consultant.findByPk(id);
+    if (!consultant) {
+      return res.status(404).json({ message: "Consultant not found" });
+    }
+
+    await consultant.update(updates);
+    res.status(200).json({ message: "Consultant updated successfully", consultant });
+  } catch (err) {
+    console.error("Error updating consultant:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// ✅ Delete consultant by ID
+const DeleteConsultant = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const consultant = await Consultant.findByPk(id);
+    if (!consultant) {
+      return res.status(404).json({ message: "Consultant not found" });
+    }
+
+    await consultant.destroy();
+    res.status(200).json({ message: "Consultant deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting consultant:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// ✅ Total Consultant Count
+const TotalConsultantCount = async (req, res) => {
+  try {
+    const count = await Consultant.count();
+    res.status(200).json({ totalConsultants: count });
+  } catch (err) {
+    console.error("Error counting consultants:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 module.exports = {
   AddConsultant,
   AllConsultant,
+  GetConsultantById,
+  UpdateConsultant,
+  DeleteConsultant,
+  TotalConsultantCount
 };

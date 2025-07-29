@@ -11,13 +11,18 @@ module.exports = (sequelize, DataTypes) => {
 
   Lead.init(
     {
+       id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
       name: { type: DataTypes.STRING, allowNull: false },
       phone: { type: DataTypes.STRING, allowNull: false },
       email: { type: DataTypes.STRING, allowNull: false },
       position: { type: DataTypes.STRING },
       status: { type: DataTypes.STRING },
       documents: { type: DataTypes.JSON },
-      jobId: { type: DataTypes.INTEGER },
+      jobId: { type: DataTypes.UUID },
       consultantId: {
         type: DataTypes.UUID,
         allowNull: false,

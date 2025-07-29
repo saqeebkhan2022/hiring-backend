@@ -2,14 +2,23 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class Lead extends Model {
+  class CallHistory extends Model {
     static associate(models) {
-     
+      // A call history belongs to one consultant
+      CallHistory.belongsTo(models.Consultant, {
+        foreignKey: "consultantId",
+        onDelete: "CASCADE",
+      });
     }
   }
 
-  Lead.init(
+  CallHistory.init(
     {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
       name: { type: DataTypes.STRING, allowNull: false },
       phone: { type: DataTypes.STRING, allowNull: false },
       status: { type: DataTypes.STRING, allowNull: false },
@@ -17,6 +26,16 @@ module.exports = (sequelize, DataTypes) => {
       creditUsed: { type: DataTypes.STRING },
       lastCall: { type: DataTypes.DATEONLY },
       attempts: { type: DataTypes.INTEGER, defaultValue: 0 },
+
+      // Foreign key to Consultant
+      consultantId: {
+        type: DataTypes.UUID,
+        allowNull: true, // Allow null temporarily (can change to false later)
+        references: {
+          model: "Consultants",
+          key: "id",
+        },
+      },
     },
     {
       sequelize,
@@ -24,5 +43,5 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  return Lead;
+  return CallHistory;
 };

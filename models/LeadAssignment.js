@@ -2,19 +2,18 @@
 const { Model, DataTypes } = require("sequelize");
 
 module.exports = (sequelize) => {
-  class User extends Model {
+  class LeadAssignment extends Model {
     static associate(models) {
-      User.belongsTo(models.Role, {
+      LeadAssignment.belongsTo(models.Consultant, {
         foreignKey: {
-          name: "RoleId",
+          name: "consultantId",
           allowNull: false,
         },
         onDelete: "CASCADE",
       });
-
-      User.hasOne(models.Consultant, {
+      LeadAssignment.belongsTo(models.Lead, {
         foreignKey: {
-          name: "userId",
+          name: "leadId",
           allowNull: false,
         },
         onDelete: "CASCADE",
@@ -22,41 +21,38 @@ module.exports = (sequelize) => {
     }
   }
 
-  User.init(
+  LeadAssignment.init(
     {
       id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
-      name: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      email: {
-        type: DataTypes.STRING,
-        unique: true,
-        allowNull: false,
-        validate: { isEmail: true },
-      },
-      password: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      verified: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-      },
-      RoleId: {
+      consultantId: {
         type: DataTypes.UUID,
         allowNull: false,
+      },
+      leadId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+      },
+      count: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
       },
     },
     {
       sequelize,
-      modelName: "User",
+      modelName: "LeadAssignment",
+      indexes: [
+        {
+          unique: true,
+          fields: ["consultantId", "leadId"],
+        },
+      ],
     }
   );
 
-  return User;
+  return LeadAssignment;
 };
