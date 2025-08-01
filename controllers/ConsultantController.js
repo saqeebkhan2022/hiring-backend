@@ -36,7 +36,7 @@ const AddConsultant = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10); // 10 salt rounds
 
     const consultantRole = await Role.findOne({
-      where: { name: "consultant" },
+      where: { name: "Consultant" },
       transaction,
     });
     if (!consultantRole) {
@@ -67,6 +67,7 @@ const AddConsultant = async (req, res) => {
         pan,
         signature,
         policeClearance,
+        verified: true,
         userId: user.id,
         status: status || "pending",
       },

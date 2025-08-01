@@ -4,8 +4,11 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Job extends Model {
     static associate(models) {
-      Job.belongsTo(models.User, {
-        foreignKey: { allowNull: false },
+      Job.belongsTo(models.Consultant, {
+        foreignKey: {
+          name: "consultantId",
+          allowNull: false,
+        },
         onDelete: "CASCADE",
       });
     }
@@ -13,10 +16,18 @@ module.exports = (sequelize, DataTypes) => {
 
   Job.init(
     {
-       id: {
+      id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
+      },
+      consultantId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+          model: "Consultants",
+          key: "id",
+        },
       },
       jobTitle: {
         type: DataTypes.STRING,
@@ -26,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
-       quantity: {
+      quantity: {
         type: DataTypes.STRING,
         allowNull: false,
       },
@@ -38,7 +49,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
       },
       salaryRange: {
-        type: DataTypes.STRING, 
+        type: DataTypes.STRING,
       },
       jobType: {
         type: DataTypes.STRING,
