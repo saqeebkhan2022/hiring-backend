@@ -21,5 +21,12 @@ router.delete("/:id", consultantController.DeleteConsultant);
 
 router.get("/count", consultantController.TotalConsultantCount);
 
+router.get("/count/pending", consultantController.PendingConsultantCount);
 
-module.exports = router;
+router.get("/count/active", consultantController.ActiveConsultantCount);
+
+router.get("/count/rejected", consultantController.RejectedConsultantCount);
+
+
+
+module.exports = router;    

@@ -15,10 +15,7 @@ const getAllLeads = async (req, res) => {
         "jobId",
         "consultantId",
       ],
-      include: [
-        { model: Job, attributes: ["jobTitle"] },
-        { model: Consultant, attributes: ["name"] },
-      ],
+      include: [{ model: Job, attributes: ["jobTitle"] }],
     });
 
     res.status(200).json(leads);
@@ -51,7 +48,16 @@ const getLeadById = async (req, res) => {
 // POST create a new lead
 const createLead = async (req, res) => {
   try {
-    const { name, phone, email, position, status, documents, jobId, consultantId } = req.body;
+    const {
+      name,
+      phone,
+      email,
+      position,
+      status,
+      documents,
+      jobId,
+      consultantId,
+    } = req.body;
 
     const lead = await Lead.create({
       name,
@@ -82,7 +88,7 @@ const updateLead = async (req, res) => {
     }
 
     await lead.update(updates);
-        await lead.reload();
+    await lead.reload();
     res.status(200).json({ message: "Lead updated successfully.", lead });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -134,8 +140,6 @@ const assignLeadsToConsultant = async (req, res) => {
   }
 };
 
-
-
 const TotalLeadCount = async (req, res) => {
   try {
     const count = await Lead.count();
@@ -153,5 +157,5 @@ module.exports = {
   updateLead,
   deleteLead,
   assignLeadsToConsultant,
-  TotalLeadCount
+  TotalLeadCount,
 };

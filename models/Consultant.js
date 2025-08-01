@@ -15,6 +15,10 @@ module.exports = (sequelize) => {
         foreignKey: "consultantId",
         onDelete: "CASCADE",
       });
+      Consultant.belongsTo(models.PlanVariant, {
+        foreignKey: "planVariantId",
+        as: "planVariant",
+      });
     }
   }
 
@@ -40,13 +44,19 @@ module.exports = (sequelize) => {
       phone: DataTypes.STRING,
       photo: DataTypes.STRING,
       aadhar: DataTypes.STRING,
-      pan: DataTypes.STRING,  
+      pan: DataTypes.STRING,
       signature: DataTypes.STRING,
       policeClearance: DataTypes.STRING,
       verified: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+
+      status: {
+        type: DataTypes.ENUM("pending", "active", "rejected"),
+        defaultValue: "pending",
+      },
+
       userId: {
         type: DataTypes.UUID,
         allowNull: false,
@@ -55,7 +65,23 @@ module.exports = (sequelize) => {
           key: "id",
         },
       },
+
+      planVariantId: {
+        type: DataTypes.UUID,
+        references: {
+          model: "PlanVariants",
+          key: "id",
+        },
+        allowNull: true,
+      },
+      planPurchasedAt: {
+        type: DataTypes.DATE,
+      },
+      planExpiresAt: {
+        type: DataTypes.DATE,
+      },
     },
+
     {
       sequelize,
       modelName: "Consultant",

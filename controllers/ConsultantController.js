@@ -2,6 +2,8 @@ const db = require("../models");
 const Consultant = db.Consultant;
 const User = db.User;
 const Role = db.Role;
+const PlanVariant = db.PlanVariant;
+const Plan = db.Plan;
 const sequelize = db.sequelize;
 const bcrypt = require("bcrypt");
 
@@ -19,6 +21,7 @@ const AddConsultant = async (req, res) => {
       pan,
       signature,
       policeClearance,
+      status,
     } = req.body;
 
     const existingUser = await User.findOne({ where: { email }, transaction });
@@ -32,9 +35,8 @@ const AddConsultant = async (req, res) => {
     // 🔑 1️⃣ Hash the password
     const hashedPassword = await bcrypt.hash(password, 10); // 10 salt rounds
 
-    // 2️⃣ Find Consultant RoleId
     const consultantRole = await Role.findOne({
-      where: { name: "admin" },
+      where: { name: "consultant" },
       transaction,
     });
     if (!consultantRole) {
@@ -42,7 +44,6 @@ const AddConsultant = async (req, res) => {
       return res.status(400).json({ message: "Role 'Consultant' not found." });
     }
 
-    // 3️⃣ Create User with hashed password
     const user = await User.create(
       {
         name,
@@ -67,11 +68,11 @@ const AddConsultant = async (req, res) => {
         signature,
         policeClearance,
         userId: user.id,
+        status: status || "pending",
       },
       { transaction }
     );
 
-    // 5️⃣ Commit everything ✅
     await transaction.commit();
 
     res.status(201).json({
@@ -85,13 +86,26 @@ const AddConsultant = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 const AllConsultant = async (req, res) => {
   try {
     const consultants = await Consultant.findAll({
-      include: {
-        model: User,
-        attributes: ["id", "name", "email", "verified"],
-      },
+      include: [
+        {
+          model: User,
+          attributes: ["id", "name", "email", "verified"],
+        },
+        {
+          model: PlanVariant,
+          as: "planVariant",
+          include: [
+            {
+              model: Plan,
+              as: "plan",
+            },
+          ],
+        },
+      ],
     });
 
     res.status(200).json({ consultants });
@@ -101,7 +115,6 @@ const AllConsultant = async (req, res) => {
   }
 };
 
-// ✅ Get consultant by ID
 const GetConsultantById = async (req, res) => {
   try {
     const consultant = await Consultant.findByPk(req.params.id, {
@@ -122,7 +135,6 @@ const GetConsultantById = async (req, res) => {
   }
 };
 
-// ✅ Update consultant by ID
 const UpdateConsultant = async (req, res) => {
   try {
     const id = req.params.id;
@@ -134,14 +146,15 @@ const UpdateConsultant = async (req, res) => {
     }
 
     await consultant.update(updates);
-    res.status(200).json({ message: "Consultant updated successfully", consultant });
+    res
+      .status(200)
+      .json({ message: "Consultant updated successfully", consultant });
   } catch (err) {
     console.error("Error updating consultant:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// ✅ Delete consultant by ID
 const DeleteConsultant = async (req, res) => {
   try {
     const id = req.params.id;
@@ -159,7 +172,6 @@ const DeleteConsultant = async (req, res) => {
   }
 };
 
-// ✅ Total Consultant Count
 const TotalConsultantCount = async (req, res) => {
   try {
     const count = await Consultant.count();
@@ -170,6 +182,35 @@ const TotalConsultantCount = async (req, res) => {
   }
 };
 
+const PendingConsultantCount = async (req, res) => {
+  try {
+    const count = await Consultant.count({ where: { status: "pending" } });
+    res.status(200).json({ pendingConsultants: count });
+  } catch (err) {
+    console.error("Error counting pending consultants:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const ActiveConsultantCount = async (req, res) => {
+  try {
+    const count = await Consultant.count({ where: { status: "active" } });
+    res.status(200).json({ activeConsultants: count });
+  } catch (err) {
+    console.error("Error counting active consultants:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const RejectedConsultantCount = async (req, res) => {
+  try {
+    const count = await Consultant.count({ where: { status: "rejected" } });
+    res.status(200).json({ rejectedConsultants: count });
+  } catch (err) {
+    console.error("Error counting rejected consultants:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 module.exports = {
   AddConsultant,
@@ -177,5 +218,8 @@ module.exports = {
   GetConsultantById,
   UpdateConsultant,
   DeleteConsultant,
-  TotalConsultantCount
+  TotalConsultantCount,
+  PendingConsultantCount,
+  ActiveConsultantCount,
+  RejectedConsultantCount,
 };

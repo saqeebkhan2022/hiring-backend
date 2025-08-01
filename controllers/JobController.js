@@ -2,8 +2,7 @@ const { Job } = require("../models");
 
 const createJob = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const job = await Job.create({ ...req.body, userId });
+    const job = await Job.create({ ...req.body });
     return res.status(201).json(job);
   } catch (error) {
     console.error(error);
