@@ -55,7 +55,7 @@ const createOrder = async (req, res) => {
       amount: variant.price,
       currency: "INR",
       razorpayOrderId: order.id,
-      status: "created",
+      status: "pending",
     });
 
     // ✅ Return order to frontend
@@ -185,12 +185,11 @@ const verifyPayment = async (req, res) => {
 
     // Try sending failure email if consultant exists
     if (req.body.email) {
-      const html = paymentFailureTemplate({ name: "Consultant" });
-       await sendEmail(
-        consultant.email,
-        "Payment Failed",
-        html
-      );
+      const html = paymentFailureTemplate({
+        name: "Consultant",
+        amount: Payment.amount,
+      });
+      await sendEmail(consultant.email, "Payment Failed", html);
     }
 
     res.status(500).json({
@@ -200,7 +199,54 @@ const verifyPayment = async (req, res) => {
   }
 };
 
+const paymentFailure = async (req, res) => {
+  try {
+    const {
+      razorpayOrderId,
+      razorpayPaymentId,
+      reason,
+      description,
+      source,
+      step,
+      code,
+      email,
+    } = req.body;
+
+    if (!razorpayOrderId || !razorpayPaymentId) {
+      return res
+        .status(400)
+        .json({ message: "Missing payment/order ID in request." });
+    }
+
+    const payment = await Payment.findOne({ where: { razorpayOrderId } });
+
+    if (!payment) {
+      return res.status(404).json({ message: "Payment record not found" });
+    }
+
+    payment.razorpayPaymentId = razorpayPaymentId;
+    payment.status = "failed";
+    payment.failureReason = reason || "Unknown error";
+    await payment.save();
+
+    if (email) {
+      const html = paymentFailureTemplate({
+        name: "User",
+        reason: reason || "Unknown",
+      });
+
+      await sendEmail(email, "Payment Failed", html);
+    }
+
+    res.status(200).json({ message: "Payment failure recorded." });
+  } catch (err) {
+    console.error("❌ Payment failure logging failed:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
   createOrder,
   verifyPayment,
+  paymentFailure,
 };

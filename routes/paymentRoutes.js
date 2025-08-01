@@ -8,4 +8,7 @@ router.post("/create-order", paymentController.createOrder);
 // Verify payment and upgrade plan
 router.post("/verify-payment", paymentController.verifyPayment);
 
+router.post("/failure", paymentController.paymentFailure);
+
+
 module.exports = router;

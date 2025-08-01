@@ -1,4 +1,5 @@
 const express = require("express");
+require("dotenv").config();
 const cors = require("cors");
 const consultant = require("./routes/consultantRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -16,10 +17,9 @@ const paymentRoutes = require("./routes/paymentRoutes");
 
 const app = express();
 
-require("dotenv").config();
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
   })
 );
@@ -27,7 +27,6 @@ app.use(
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use("/api/consultant", consultant);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
