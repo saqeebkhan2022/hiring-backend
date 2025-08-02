@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const LeadController = require("../controllers/LeadController");
+const authenticate = require("../middleware/authMiddleware");
+const { isAdmin ,isConsultant} = require("../middleware/roleMiddleware");
 
 router.post("/", LeadController.createLead);
 router.get("/count", LeadController.TotalLeadCount);

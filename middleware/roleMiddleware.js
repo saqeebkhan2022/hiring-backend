@@ -12,7 +12,19 @@ const isConsultant = (req, res, next) => {
   next();
 };
 
+// roleMiddleware.js
+const isAdminOrConsultant = (req, res, next) => {
+  if (req.user?.role === "Admin" || req.user?.role === "Consultant") {
+    next();
+  } else {
+    return res
+      .status(403)
+      .json({ message: "Access restricted to Admin or Consultant." });
+  }
+};
+
 module.exports = {
   isAdmin,
   isConsultant,
+  isAdminOrConsultant,
 };

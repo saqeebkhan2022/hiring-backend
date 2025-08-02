@@ -2,21 +2,27 @@ const { Job } = require("../models");
 
 const createJob = async (req, res) => {
   try {
-    const consultantId = req.user.consultantId;
-    const job = await Job.create({
+    const jobData = {
       ...req.body,
-      consultantId,
+    };
+
+    const job = await Job.create(jobData);
+
+    res.status(201).json({
+      message: "Job created successfully.",
+      job,
     });
-    return res.status(201).json(job);
   } catch (error) {
-    console.error(error);
-    return res.status(400).json({ message: "Failed to create job.", error });
+    res.status(500).json({
+      message: "Failed to create job.",
+      error,
+    });
   }
 };
 
 const getAllJobs = async (req, res) => {
   try {
-    const consultantId = req.user.consultantId;
+    const consultantId = req.user?.id; // assuming logged-in consultant
     const jobs = await Job.findAll({ where: { consultantId } });
     return res.status(200).json(jobs);
   } catch (error) {

@@ -8,8 +8,8 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "jobId",
         onDelete: "CASCADE",
       });
-      JobApplication.belongsTo(models.User, {
-        foreignKey: "consultantId", // the one who posted the job
+      JobApplication.belongsTo(models.Consultant, {
+        foreignKey: "consultantId",
         onDelete: "CASCADE",
       });
     }
