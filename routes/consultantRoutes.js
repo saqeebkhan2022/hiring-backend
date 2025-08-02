@@ -5,29 +5,29 @@ const authenticate = require("../middleware/authMiddleware");
 const { isAdmin ,isConsultant} = require("../middleware/roleMiddleware");
 
 
-router.get("/count", consultantController.TotalConsultantCount);
+router.get("/count",authenticate, consultantController.TotalConsultantCount);
 // Create consultant (also creates user)
-router.post("/add", consultantController.AddConsultant);
+router.post("/add", authenticate, isAdmin, consultantController.AddConsultant);
 
 // Get all consultants with user info
-router.get("/all", consultantController.AllConsultant);
+router.get("/all", authenticate, isAdmin, consultantController.AllConsultant);
 
 // Get consultant by ID
-router.get("/:id", consultantController.GetConsultantById);
+router.get("/:id", authenticate, isAdmin,isConsultant, consultantController.GetConsultantById);
 
 // Update consultant
-router.put("/:id", consultantController.UpdateConsultant);
+router.put("/:id", authenticate, isAdmin, consultantController.UpdateConsultant);
 
 // Delete consultant
-router.delete("/:id", consultantController.DeleteConsultant);
+router.delete("/:id", authenticate, isAdmin, consultantController.DeleteConsultant);
 
-router.get("/count", consultantController.TotalConsultantCount);
+router.get("/count", authenticate, consultantController.TotalConsultantCount);
 
-router.get("/count/pending", consultantController.PendingConsultantCount);
+router.get("/count/pending", authenticate,isAdmin, consultantController.PendingConsultantCount);
 
-router.get("/count/active", consultantController.ActiveConsultantCount);
+router.get("/count/active", authenticate,isAdmin, consultantController.ActiveConsultantCount);
 
-router.get("/count/rejected", consultantController.RejectedConsultantCount);
+router.get("/count/rejected", authenticate,isAdmin, consultantController.RejectedConsultantCount);
 
 
 
