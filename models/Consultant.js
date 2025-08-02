@@ -4,17 +4,16 @@ const { Model, DataTypes } = require("sequelize");
 module.exports = (sequelize) => {
   class Consultant extends Model {
     static associate(models) {
-      // Consultant belongs to a user
       Consultant.belongsTo(models.User, {
         foreignKey: "userId",
         onDelete: "CASCADE",
       });
 
-      // Consultant has many CallHistories
       Consultant.hasMany(models.CallHistory, {
         foreignKey: "consultantId",
         onDelete: "CASCADE",
       });
+
       Consultant.belongsTo(models.PlanVariant, {
         foreignKey: "planVariantId",
         as: "planVariant",
@@ -36,14 +35,21 @@ module.exports = (sequelize) => {
       email: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true, // ✅ Unique
         validate: {
           isEmail: true,
         },
       },
-      company: DataTypes.STRING,
+      company: {
+        type: DataTypes.STRING,
+        unique: true, // ✅ Unique
+      },
       phone: DataTypes.STRING,
       photo: DataTypes.STRING,
-      aadhar: DataTypes.STRING,
+      aadhar: {
+        type: DataTypes.STRING,
+        unique: true, // ✅ Unique
+      },
       pan: DataTypes.STRING,
       signature: DataTypes.STRING,
       policeClearance: DataTypes.STRING,
@@ -51,12 +57,10 @@ module.exports = (sequelize) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-
       status: {
         type: DataTypes.ENUM("pending", "active", "rejected"),
         defaultValue: "pending",
       },
-
       userId: {
         type: DataTypes.UUID,
         allowNull: false,
@@ -65,7 +69,6 @@ module.exports = (sequelize) => {
           key: "id",
         },
       },
-
       planVariantId: {
         type: DataTypes.UUID,
         references: {
@@ -81,7 +84,6 @@ module.exports = (sequelize) => {
         type: DataTypes.DATE,
       },
     },
-
     {
       sequelize,
       modelName: "Consultant",

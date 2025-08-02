@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const consultantController = require("../controllers/ConsultantController");
+const authenticate = require("../middleware/authMiddleware");
+const { isAdmin ,isConsultant} = require("../middleware/roleMiddleware");
 
 
 router.get("/count", consultantController.TotalConsultantCount);
