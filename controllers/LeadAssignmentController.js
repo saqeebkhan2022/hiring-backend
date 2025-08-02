@@ -37,7 +37,6 @@ const AssignLeads = async (req, res) => {
   }
 };
 
-
 const GetAssignments = async (req, res) => {
   try {
     const all = await LeadAssignment.findAll({
@@ -53,8 +52,6 @@ const GetAssignments = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 module.exports = {
   AssignLeads,

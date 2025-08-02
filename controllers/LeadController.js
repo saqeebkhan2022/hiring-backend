@@ -14,6 +14,7 @@ const getAllLeads = async (req, res) => {
         "documents",
         "jobId",
         "consultantId",
+        "createdAt",
       ],
       include: [{ model: Job, attributes: ["jobTitle"] }],
     });
