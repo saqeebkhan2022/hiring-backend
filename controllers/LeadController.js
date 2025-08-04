@@ -151,6 +151,27 @@ const TotalLeadCount = async (req, res) => {
   }
 };
 
+// GET counts of leads by status in one API
+const getLeadStatusSummary = async (req, res) => {
+  try {
+    const [underReview, shortlisted, rejected] = await Promise.all([
+      Lead.count({ where: { status: "under review" } }),
+      Lead.count({ where: { status: "shortlisted" } }),
+      Lead.count({ where: { status: "rejected" } }),
+    ]);
+
+    res.status(200).json({
+      underReview,
+      shortlisted,
+      rejected,
+    });
+  } catch (error) {
+    console.error("Error fetching lead status summary:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 module.exports = {
   getAllLeads,
   getLeadById,
@@ -159,4 +180,5 @@ module.exports = {
   deleteLead,
   assignLeadsToConsultant,
   TotalLeadCount,
+  getLeadStatusSummary
 };

@@ -3,9 +3,9 @@ const bcrypt = require("bcryptjs");
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    // ✅ Find the 'admin' role ID
+    // ✅ Find the 'Admin' role ID
     const [roles] = await queryInterface.sequelize.query(
-      `SELECT id FROM "Roles" WHERE name = 'admin' LIMIT 1;`
+      `SELECT id FROM "Roles" WHERE name = 'Admin' LIMIT 1;`
     );
 
     const adminRoleId = roles[0]?.id;
@@ -18,7 +18,7 @@ module.exports = {
     return queryInterface.bulkInsert("Users", [
       {
         name: "Admin",
-        email: "admin@deserthiring.com",
+        email: "Admin@deserthiring.com",
         password: hashedPassword,
         verified: true,
         RoleId: adminRoleId,
@@ -30,7 +30,7 @@ module.exports = {
 
   down: async (queryInterface, Sequelize) => {
     return queryInterface.bulkDelete("Users", {
-      email: "admin@deserthiring.com",
+      email: "Admin@deserthiring.com",
     });
   },
 };

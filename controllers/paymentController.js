@@ -14,9 +14,8 @@ const moment = require("moment");
 
 const createOrder = async (req, res) => {
   try {
-    const { consultantId, planVariantId } = req.body;
+    const { consultantId, planVariantId, amount } = req.body;
 
-    // 🛑 Validate request body
     if (!consultantId || !planVariantId) {
       return res
         .status(400)
@@ -43,7 +42,7 @@ const createOrder = async (req, res) => {
 
     // ✅ Create Razorpay order
     const order = await razorpay.orders.create({
-      amount: variant.price * 100, // Razorpay takes paise
+      amount: amount, // Razorpay takes paise
       currency: "INR",
       receipt: `rcpt_${Date.now()}`,
     });
@@ -52,7 +51,7 @@ const createOrder = async (req, res) => {
     await Payment.create({
       consultantId,
       planVariantId,
-      amount: variant.price,
+      amount: amount,
       currency: "INR",
       razorpayOrderId: order.id,
       status: "pending",
@@ -89,7 +88,7 @@ const verifyPayment = async (req, res) => {
     payment.status = "paid";
     await payment.save();
 
-    // Step 3: Fetch consultant with current plan details
+    // Step 3: Fetch consultant and current plan details
     const consultant = await Consultant.findByPk(payment.consultantId, {
       include: {
         model: PlanVariant,
@@ -103,8 +102,10 @@ const verifyPayment = async (req, res) => {
 
     const currentVariant = consultant.planVariant;
     const currentPlan = currentVariant?.plan;
+    const currentPlanTitle = currentPlan?.title || "";
+    const currentDuration = currentVariant?.duration_days || 0;
 
-    // Step 4: Fetch the new plan variant and its plan
+    // Step 4: Fetch the new plan variant
     const newVariant = await PlanVariant.findByPk(payment.planVariantId, {
       include: { model: Plan, as: "plan" },
     });
@@ -113,45 +114,56 @@ const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "New plan variant not found" });
     }
 
-    // Step 5: Upgrade Logic
-    const currentPlanTitle = currentPlan?.title || "";
     const newPlanTitle = newVariant.plan.title;
-    const currentDuration = currentVariant?.duration_days || 0;
     const newDuration = newVariant.duration_days;
-
-    if (currentPlanTitle === "Premium" && newPlanTitle === "Standard") {
-      return res.status(400).json({
-        message: "Downgrade from Premium to Standard is not allowed.",
-      });
-    }
-
-    if (currentPlanTitle === newPlanTitle && newDuration <= currentDuration) {
-      return res.status(400).json({
-        message:
-          "Cannot downgrade or assign same/shorter duration variant in the same plan.",
-      });
-    }
 
     const now = moment();
     const purchasedAt = moment(consultant.planPurchasedAt || now);
+    const expiresAt = moment(consultant.planExpiresAt || now);
+    const isExpired = now.isAfter(expiresAt);
     const daysUsed = now.diff(purchasedAt, "days");
 
+    // ❌ Downgrade from Premium to Standard not allowed unless plan is expired
+    if (
+      !isExpired &&
+      currentPlanTitle === "Premium" &&
+      newPlanTitle === "Standard"
+    ) {
+      return res.status(400).json({
+        message:
+          "Downgrade from Premium to Standard is not allowed while current plan is active.",
+      });
+    }
+
+    // ❌ Same plan & shorter/equal duration not allowed if not expired
+    if (
+      !isExpired &&
+      currentPlanTitle === newPlanTitle &&
+      newDuration <= currentDuration
+    ) {
+      return res.status(400).json({
+        message:
+          "Cannot assign same or shorter duration in the same plan while current plan is active.",
+      });
+    }
+
+    // ✅ Calculate new duration
     let remainingDays;
-    if (currentPlanTitle !== newPlanTitle) {
+    if (isExpired || currentPlanTitle !== newPlanTitle) {
       remainingDays = newDuration;
     } else {
       remainingDays = Math.max(newDuration - daysUsed, 0);
     }
 
-    // Step 6: Update consultant plan
+    // Step 5: Update consultant plan
     const oldVariantId = currentVariant?.id || null;
 
     consultant.planVariantId = newVariant.id;
     consultant.planPurchasedAt = now.toDate();
-    consultant.planExpiresAt = now.add(remainingDays, "days").toDate();
+    consultant.planExpiresAt = now.clone().add(remainingDays, "days").toDate();
     await consultant.save();
 
-    // Step 7: Log history
+    // Step 6: Log history
     await PlanUpgradeHistory.create({
       consultantId: consultant.id,
       oldPlanVariantId: oldVariantId,
@@ -159,12 +171,12 @@ const verifyPayment = async (req, res) => {
       changedAt: new Date(),
     });
 
-    // Step 8: Send success email
+    // Step 7: Send success email
     const html = paymentSuccessTemplate({
       name: consultant.name || "Consultant",
       plan: newPlanTitle,
       duration: newDuration,
-      amount: payment.amount,
+      amount: payment.amount / 100,
     });
 
     if (consultant.email) {
@@ -177,19 +189,35 @@ const verifyPayment = async (req, res) => {
       console.warn("Consultant email not found, skipping email send.");
     }
 
-    res
-      .status(200)
-      .json({ message: "Payment verified and plan upgraded successfully." });
+    res.status(200).json({
+      message: "Payment verified and plan upgraded successfully.",
+      consultant: {
+        id: consultant.id,
+        name: consultant.name,
+        email: consultant.email,
+        role: "Consultant",
+        verified: consultant.verified,
+        loginBlocked: consultant.loginBlocked,
+        plan: {
+          title: newVariant.plan.title,
+          duration_days: newDuration,
+          call_access: newVariant.call_access,
+          price: payment.amount,
+        },
+        planExpiry: consultant.planExpiresAt,
+        consultantId: consultant.id,
+      },
+    });
   } catch (err) {
     console.error("Payment verification failed:", err);
 
-    // Try sending failure email if consultant exists
+    // Step 8: Attempt failure email
     if (req.body.email) {
       const html = paymentFailureTemplate({
         name: "Consultant",
         amount: Payment.amount,
       });
-      await sendEmail(consultant.email, "Payment Failed", html);
+      await sendEmail(req.body.email, "Payment Failed", html);
     }
 
     res.status(500).json({
@@ -245,8 +273,38 @@ const paymentFailure = async (req, res) => {
   }
 };
 
+const getAllPayments = async (req, res) => {
+  try {
+    const payments = await Payment.findAll({
+      include: [
+        {
+          model: Consultant,
+          attributes: ["name"],
+        },
+        {
+          model: PlanVariant,
+          include: [
+            {
+              model: Plan,
+              as: "plan",
+              attributes: ["title"],
+            },
+          ],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    res.status(200).json(payments);
+  } catch (err) {
+    console.error("GetAllPayments error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   createOrder,
   verifyPayment,
   paymentFailure,
+  getAllPayments,
 };

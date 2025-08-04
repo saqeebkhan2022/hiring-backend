@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { User, Role, Consultant, PlanVariant } = require("../models");
+const { User, Role, Consultant, Plan, PlanVariant } = require("../models");
 
 // Utility to calculate remaining days from today to expiry date
 function getRemainingDays(expiryDate) {
@@ -14,7 +14,6 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Fetch user with role and consultant's plan data
     const user = await User.findOne({
       where: { email },
       include: [
@@ -28,8 +27,15 @@ const login = async (req, res) => {
           include: [
             {
               model: PlanVariant,
-              as: "planVariant", // Must match your model alias
-              attributes: ["price", "duration_days", "call_access"],
+              as: "planVariant",
+              attributes: ["id", "price", "duration_days", "call_access"],
+              include: [
+                {
+                  model: Plan,
+                  as: "plan",
+                  attributes: ["id", "title"],
+                },
+              ],
             },
           ],
         },
@@ -50,14 +56,9 @@ const login = async (req, res) => {
     const consultant = user.Consultant;
     const consultantId = consultant?.id || null;
     const planExpiry = consultant?.planExpiresAt || null;
-
-    // Calculate how many days are left until the plan expires
     const daysLeft = planExpiry ? getRemainingDays(planExpiry) : null;
-
-    // If plan expired, block features but still allow login
     const loginBlocked = daysLeft !== null && daysLeft < 0;
 
-    // Generate JWT token
     const token = jwt.sign(
       {
         userId: user.id,
@@ -71,7 +72,20 @@ const login = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // Send response
+    // 👇 Refactor planVariant response structure
+    const planVariant = consultant?.planVariant
+      ? {
+          id: consultant.planVariant.id,
+          price: consultant.planVariant.price,
+          duration_days: consultant.planVariant.duration_days,
+          call_access: consultant.planVariant.call_access,
+          plan: {
+            id: consultant.planVariant.plan?.id,
+            title: consultant.planVariant.plan?.title,
+          },
+        }
+      : null;
+
     res.status(200).json({
       token,
       user: {
@@ -81,7 +95,7 @@ const login = async (req, res) => {
         role: user.Role.name,
         verified: user.verified,
         consultantId,
-        plan: consultant?.planVariant || null,
+        planVariant, // 👈 Correct field name here
         planExpiry,
         daysLeft,
         loginBlocked,

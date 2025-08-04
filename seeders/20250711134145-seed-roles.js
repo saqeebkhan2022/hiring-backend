@@ -18,7 +18,7 @@ module.exports = {
 
   down: async (queryInterface, Sequelize) => {
     await queryInterface.bulkDelete("Roles", {
-      name: ["admin", "consultant"],
+      name: ["Admin", "consultant"],
     });
   },
 };

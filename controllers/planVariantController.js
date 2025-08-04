@@ -27,9 +27,15 @@ const getAllVariants = async (req, res) => {
         model: Plan,
         as: "plan",
       },
+      order: [
+        [{ model: Plan, as: "plan" }, "title", "ASC"], // Order by plan title
+        ["duration_days", "ASC"], // Then by duration
+      ],
     });
+
     res.status(200).json(variants);
   } catch (error) {
+    console.error("Error fetching plan variants:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -92,7 +98,7 @@ const updateConsultantPlan = async (req, res) => {
   const { newPlanVariantId } = req.body;
 
   try {
-    // Get current consultant and their current plan + variant
+    // 🔍 Get current consultant with current plan & variant
     const consultant = await Consultant.findByPk(consultantId, {
       include: {
         model: PlanVariant,
@@ -111,7 +117,10 @@ const updateConsultantPlan = async (req, res) => {
     const currentVariant = consultant.planVariant;
     const currentPlan = currentVariant?.plan;
 
-    // Get the new plan variant
+    const currentPlanTitle = currentPlan?.title || "";
+    const currentDuration = currentVariant?.duration_days || 0;
+
+    // 🔍 Get new plan variant
     const newVariant = await PlanVariant.findByPk(newPlanVariantId, {
       include: {
         model: Plan,
@@ -123,48 +132,54 @@ const updateConsultantPlan = async (req, res) => {
       return res.status(400).json({ message: "New plan variant not found" });
     }
 
-    const currentPlanTitle = currentPlan?.title || "";
     const newPlanTitle = newVariant.plan.title;
-    const currentDuration = currentVariant?.duration_days || 0;
     const newDuration = newVariant.duration_days;
 
-    // ❌ Disallow downgrade (Premium → Standard)
-    if (currentPlanTitle === "Premium" && newPlanTitle === "Standard") {
-      return res.status(400).json({
-        message: "Downgrade from Premium to Standard is not allowed.",
-      });
-    }
-
-    // ❌ Disallow same plan with same or shorter duration
-    if (currentPlanTitle === newPlanTitle && newDuration <= currentDuration) {
-      return res.status(400).json({
-        message:
-          "Cannot downgrade or assign same/shorter duration variant in the same plan.",
-      });
-    }
-
-    // ✅ Calculate remaining days
     const now = moment();
     const purchasedAt = moment(consultant.planPurchasedAt || now);
+    const expiresAt = moment(consultant.planExpiresAt || now);
+    const isExpired = now.isAfter(expiresAt);
     const daysUsed = now.diff(purchasedAt, "days");
 
+    // ❌ Downgrade: Premium → Standard only if plan is expired
+    if (
+      !isExpired &&
+      currentPlanTitle === "Premium" &&
+      newPlanTitle === "Standard"
+    ) {
+      return res.status(400).json({
+        message:
+          "You cannot downgrade from Premium to Standard while your current plan is still active.",
+      });
+    }
+
+    // ❌ Same plan + same/shorter duration not allowed if plan is still active
+    if (
+      !isExpired &&
+      currentPlanTitle === newPlanTitle &&
+      newDuration <= currentDuration
+    ) {
+      return res.status(400).json({
+        message:
+          "Cannot assign same or shorter duration in the same plan while current plan is still active.",
+      });
+    }
+
+    // ✅ Calculate new duration
     let remainingDays;
-    if (currentPlanTitle !== newPlanTitle) {
-      // Upgrading from Standard → Premium: reset to full duration
-      remainingDays = newDuration;
+    if (isExpired || currentPlanTitle !== newPlanTitle) {
+      remainingDays = newDuration; // full reset
     } else {
-      // Same plan title but longer duration: subtract days used
       remainingDays = Math.max(newDuration - daysUsed, 0);
     }
 
     // ✅ Update consultant plan
     consultant.planVariantId = newVariant.id;
     consultant.planPurchasedAt = now.toDate();
-    consultant.planExpiresAt = now.add(remainingDays, "days").toDate();
-
+    consultant.planExpiresAt = now.clone().add(remainingDays, "days").toDate();
     await consultant.save();
 
-    // ✅ Log upgrade in history
+    // ✅ Log the plan change
     await PlanUpgradeHistory.create({
       consultantId: consultant.id,
       oldPlanVariantId: currentVariant?.id || null,
@@ -172,8 +187,8 @@ const updateConsultantPlan = async (req, res) => {
       changedAt: new Date(),
     });
 
-    // ✅ Success response
-    res.status(200).json({
+    // ✅ Send response
+    return res.status(200).json({
       message: "Plan upgraded successfully",
       consultant: {
         id: consultant.id,
@@ -187,7 +202,7 @@ const updateConsultantPlan = async (req, res) => {
     });
   } catch (error) {
     console.error("Upgrade error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Internal server error",
       error: error.message,
     });
