@@ -62,17 +62,16 @@ const login = async (req, res) => {
     const token = jwt.sign(
       {
         userId: user.id,
+        consultantId: consultantId,
         name: user.name,
         email: user.email,
         role: user.Role.name,
         verified: user.verified,
-        consultantId,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    // 👇 Refactor planVariant response structure
     const planVariant = consultant?.planVariant
       ? {
           id: consultant.planVariant.id,
@@ -87,6 +86,7 @@ const login = async (req, res) => {
       : null;
 
     res.status(200).json({
+      message: "Login successful",
       token,
       user: {
         id: user.id,
@@ -95,7 +95,7 @@ const login = async (req, res) => {
         role: user.Role.name,
         verified: user.verified,
         consultantId,
-        planVariant, // 👈 Correct field name here
+        planVariant,
         planExpiry,
         daysLeft,
         loginBlocked,

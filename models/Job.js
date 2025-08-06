@@ -61,19 +61,19 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
       },
       dutyHours: {
-        type: DataTypes.STRING, // Example: "8 hours/day"
+        type: DataTypes.STRING,
       },
       overtime: {
-        type: DataTypes.STRING, // Example: "2 hours/day"
+        type: DataTypes.STRING,
       },
       ageLimit: {
-        type: DataTypes.STRING, // Example: "21 - 35"
+        type: DataTypes.STRING,
       },
       gender: {
         type: DataTypes.STRING,
       },
       applicationDeadline: {
-        type: DataTypes.DATEONLY, // Format: yyyy-mm-dd
+        type: DataTypes.DATEONLY,
       },
       accommodationProvided: {
         type: DataTypes.BOOLEAN,
@@ -91,10 +91,16 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      isDeleted: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
     },
     {
       sequelize,
       modelName: "Job",
+      timestamps: true,
+      paranoid: false, // we're using our own isDeleted flag
     }
   );
 

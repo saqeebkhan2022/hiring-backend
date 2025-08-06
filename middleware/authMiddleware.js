@@ -12,13 +12,16 @@ const authenticate = async (req, res, next) => {
       include: [{ model: Role, attributes: ["name"] }],
     });
 
-    if (!user) return res.status(401).json({ message: "Invalid token user." });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid token user." });
+    }
 
     req.user = {
       id: user.id,
       email: user.email,
       role: user.Role?.name || decoded.role,
       verified: user.verified,
+      consultantId: decoded.consultantId || null, 
     };
 
     next();
