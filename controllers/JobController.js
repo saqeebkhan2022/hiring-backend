@@ -34,10 +34,15 @@ const createJob = async (req, res) => {
 // Get all jobs for logged-in consultant (excluding deleted)
 const getAllJobs = async (req, res) => {
   try {
-    const consultantId = req.user.consultantId || req.user.id;
+    const consultantId = req.user?.consultantId || req.user?.id;
+
     const jobs = await Job.findAll({
-      where: { consultantId, isDeleted: false },
+      where: {
+        isDeleted: false,
+        ...(consultantId ? { consultantId } : {}), // only filter if consultantId exists
+      },
     });
+
     return res.status(200).json(jobs);
   } catch (error) {
     console.error(error);

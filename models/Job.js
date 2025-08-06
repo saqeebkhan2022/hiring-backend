@@ -100,7 +100,7 @@ module.exports = (sequelize, DataTypes) => {
       sequelize,
       modelName: "Job",
       timestamps: true,
-      paranoid: false, // we're using our own isDeleted flag
+      paranoid: false,
     }
   );
 

@@ -1,5 +1,6 @@
 const { JobApplication } = require("../models");
 
+// ✅ Apply to Job
 const applyToJob = async (req, res) => {
   try {
     const { name, number, jobId, consultantId } = req.body;
@@ -25,6 +26,23 @@ const applyToJob = async (req, res) => {
   }
 };
 
+// ✅ Get all Applications
+const getAllApplications = async (req, res) => {
+  try {
+    const applications = await JobApplication.findAll({
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json(applications);
+  } catch (error) {
+    console.error("Fetch Applications Error:", error);
+    return res
+      .status(500)
+      .json({ message: "Failed to fetch applications.", error });
+  }
+};
+
 module.exports = {
   applyToJob,
+  getAllApplications,
 };
