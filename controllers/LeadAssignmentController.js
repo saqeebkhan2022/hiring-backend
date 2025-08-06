@@ -3,7 +3,7 @@ const LeadAssignment = db.LeadAssignment;
 const Consultant = db.Consultant;
 const Lead = db.Lead;
 
-const AssignLeads = async (req, res) => {
+const AssignLeads = async (req, res) => {9
   try {
     const { consultantId, leadIds } = req.body;
 
@@ -12,24 +12,35 @@ const AssignLeads = async (req, res) => {
     }
 
     const results = [];
+    const skipped = [];
 
     for (const leadId of leadIds) {
-      const [assignment, created] = await LeadAssignment.findOrCreate({
+      // Check if already assigned
+      const existing = await LeadAssignment.findOne({
         where: { consultantId, leadId },
-        defaults: { count: 1 },
       });
 
-      if (!created) {
-        assignment.count += 1;
-        await assignment.save();
+      if (existing) {
+        skipped.push(leadId); // Already assigned → skip
+        continue;
       }
 
-      results.push(assignment);
+      const newAssignment = await LeadAssignment.create({
+        consultantId,
+        leadId,
+        count: 1,
+      });
+
+      results.push(newAssignment);
     }
 
     res.status(200).json({
-      message: "Leads assigned successfully",
-      assignments: results,
+      message:
+        results.length > 0
+          ? "Leads assigned successfully."
+          : "Selected leads were already assigned.",
+      assigned: results,
+      skipped,
     });
   } catch (error) {
     console.error("Error assigning leads:", error);
@@ -53,7 +64,33 @@ const GetAssignments = async (req, res) => {
   }
 };
 
+
+const DeleteAssignment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const assignment = await LeadAssignment.findByPk(id);
+
+    if (!assignment) {
+      return res.status(404).json({ message: "Assignment not found." });
+    }
+
+    if (assignment.isDeleted) {
+      return res.status(400).json({ message: "Already deleted." });
+    }
+
+    await assignment.update({ isDeleted: true });
+
+    return res.status(200).json({ message: "Assignment deleted (soft)." });
+  } catch (error) {
+    console.error("Soft delete error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 module.exports = {
   AssignLeads,
   GetAssignments,
+  DeleteAssignment
 };

@@ -1,22 +1,31 @@
-const { Lead, Job, Consultant } = require("../models");
+const path = require("path");
+const {
+  Lead,
+  Job,
+  Consultant,
+  JobApplication,
+  LeadAssignment,
+} = require("../models");
 
 // GET all leads
 const getAllLeads = async (req, res) => {
   try {
     const leads = await Lead.findAll({
-      attributes: [
-        "id",
-        "name",
-        "phone",
-        "email",
-        "position",
-        "status",
-        "documents",
-        "jobId",
-        "consultantId",
-        "createdAt",
-      ],
+      // attributes: [
+      //   "id",
+      //   "name",
+      //   "phone",
+      //   "email",
+      //   "position",
+      //   "status",
+      //   "documents",
+      //   "jobId",
+      //   "experianceRequired",
+      //   "consultantId",
+      //   "createdAt",
+      // ],
       include: [{ model: Job, attributes: ["jobTitle"] }],
+      order: [["createdAt", "DESC"]],
     });
 
     res.status(200).json(leads);
@@ -46,33 +55,89 @@ const getLeadById = async (req, res) => {
   }
 };
 
-// POST create a new lead
+// GET leads by consultantId
+const getLeadsAssignByConsultantId = async (req, res) => {
+  try {
+    const { consultantId } = req.params;
+
+    const assignments = await LeadAssignment.findAll({
+      where: { consultantId },
+      include: [
+        {
+          model: Lead,
+          include: [
+            {
+              model: Job,
+              attributes: ["jobTitle"], // Optional if useful to show job info
+            },
+          ],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    if (!assignments.length) {
+      return res
+        .status(404)
+        .json({ message: "No leads found for this consultant." });
+    }
+
+    res.status(200).json(assignments);
+  } catch (error) {
+    console.error("Error fetching assigned leads:", error);
+    res.status(500).json({ error: "Failed to fetch assigned leads." });
+  }
+};
+
+// ✅ createLead in controllers/LeadController.js
+
 const createLead = async (req, res) => {
   try {
-    const {
-      name,
-      phone,
-      email,
-      position,
-      status,
-      documents,
-      jobId,
-      consultantId,
-    } = req.body;
+    const { name, phone, email, position, status, jobId } = req.body;
+
+    // 🔐 Check if same phone already applied to same job
+    const existing = await Lead.findOne({ where: { phone, jobId } });
+    if (existing) {
+      return res.status(400).json({
+        message: "This number has already been used to apply for this job.",
+      });
+    }
+
+    // ✅ Find consultantId from Job
+    const job = await Job.findByPk(jobId);
+    const consultantId = job?.consultantId || null;
+
+    // ✅ Process uploaded documents
+    const documents = {};
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file) => {
+        const key = file.fieldname.replace("documents[", "").replace("]", "");
+        documents[key] = `/uploads/${path.basename(file.path)}`;
+        // When switching to S3, replace this with the S3 URL
+      });
+    }
 
     const lead = await Lead.create({
       name,
       phone,
       email,
       position,
-      status,
-      documents,
+      status: "Pending",
       jobId,
       consultantId,
+      documents,
+    });
+    const application = await JobApplication.findOne({
+      where: { number: phone, jobId },
     });
 
-    res.status(201).json(lead);
+    if (application) {
+      await application.update({ isLeadCreated: true });
+    }
+
+    res.status(201).json({ message: "Lead created successfully", lead });
   } catch (error) {
+    console.error("Create Lead Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -155,9 +220,9 @@ const TotalLeadCount = async (req, res) => {
 const getLeadStatusSummary = async (req, res) => {
   try {
     const [underReview, shortlisted, rejected] = await Promise.all([
-      Lead.count({ where: { status: "under review" } }),
-      Lead.count({ where: { status: "shortlisted" } }),
-      Lead.count({ where: { status: "rejected" } }),
+      Lead.count({ where: { status: "Under Review" } }),
+      Lead.count({ where: { status: "Shortlisted" } }),
+      Lead.count({ where: { status: "Rejected" } }),
     ]);
 
     res.status(200).json({
@@ -171,7 +236,6 @@ const getLeadStatusSummary = async (req, res) => {
   }
 };
 
-
 module.exports = {
   getAllLeads,
   getLeadById,
@@ -180,5 +244,6 @@ module.exports = {
   deleteLead,
   assignLeadsToConsultant,
   TotalLeadCount,
-  getLeadStatusSummary
+  getLeadStatusSummary,
+  getLeadsAssignByConsultantId,
 };

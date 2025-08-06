@@ -38,4 +38,17 @@ router.post(
   paymentController.paymentFailure
 );
 
+router.get(
+  "/total-paid",
+  authenticate,
+  isAdmin,
+  paymentController.getTotalPaid
+);
+
+router.get(
+  "/monthly-earnings",
+
+  paymentController.getMonthlyEarnings
+);
+
 module.exports = router;

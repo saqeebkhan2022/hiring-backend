@@ -72,6 +72,9 @@ module.exports = (sequelize, DataTypes) => {
       gender: {
         type: DataTypes.STRING,
       },
+      currency: {
+        type: DataTypes.STRING,
+      },
       applicationDeadline: {
         type: DataTypes.DATEONLY,
       },

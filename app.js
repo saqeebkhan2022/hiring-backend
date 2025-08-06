@@ -14,8 +14,10 @@ const planRoutes = require("./routes/planRoutes");
 const planVariantRoutes = require("./routes/planVariantRoutes");
 const planUpgradeHistoryRoutes = require("./routes/planUpgradeHistoryRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
-
+const path = require("path");
 const app = express();
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use(
   cors({
@@ -24,7 +26,6 @@ app.use(
   })
 );
 
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/api/consultant", consultant);

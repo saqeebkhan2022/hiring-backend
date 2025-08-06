@@ -9,7 +9,7 @@ const {
 const sendEmail = require("../utils/mailer");
 const paymentSuccessTemplate = require("../templates/paymentSuccessTemplate");
 const paymentFailureTemplate = require("../templates/paymentFailureTemplate");
-
+const { Op, fn, col, literal } = require("sequelize");
 const moment = require("moment");
 
 const createOrder = async (req, res) => {
@@ -302,9 +302,83 @@ const getAllPayments = async (req, res) => {
   }
 };
 
+const getTotalPaid = async (req, res) => {
+  try {
+    const now = new Date();
+
+    // 🔹 Current Month
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    // 🔹 Previous Month
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    // 🔸 This Month Total
+    const thisMonthTotal = await Payment.sum("amount", {
+      where: {
+        status: "paid",
+        createdAt: {
+          [Op.gte]: startOfThisMonth,
+          [Op.lt]: startOfNextMonth,
+        },
+      },
+    });
+
+    // 🔸 Last Month Total
+    const lastMonthTotal = await Payment.sum("amount", {
+      where: {
+        status: "paid",
+        createdAt: {
+          [Op.gte]: startOfLastMonth,
+          [Op.lte]: endOfLastMonth,
+        },
+      },
+    });
+
+    // 📈 Calculate Growth %
+    let growth = 0;
+    if (lastMonthTotal > 0) {
+      growth = ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+    }
+
+    res.status(200).json({
+      totalPaid: thisMonthTotal || 0,
+      growth: parseFloat(growth.toFixed(2)),
+    });
+  } catch (err) {
+    console.error("GetTotalPaid error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const getMonthlyEarnings = async (req, res) => {
+  try {
+    const monthlyEarnings = await Payment.findAll({
+      attributes: [
+        // Group by first day of the month
+        [fn("DATE_TRUNC", "month", col("createdAt")), "month"],
+        [fn("SUM", col("amount")), "totalEarning"],
+      ],
+      where: {
+        status: "paid", // Only include paid payments
+      },
+      group: [literal(`DATE_TRUNC('month', "createdAt")`)],
+      order: [[literal(`month`), "ASC"]],
+    });
+
+    res.status(200).json(monthlyEarnings);
+  } catch (error) {
+    console.error("getMonthlyEarnings error:", error);
+    res.status(500).json({ error: "Failed to fetch monthly earnings" });
+  }
+};
+
 module.exports = {
   createOrder,
   verifyPayment,
   paymentFailure,
   getAllPayments,
+  getTotalPaid,
+  getMonthlyEarnings,
 };

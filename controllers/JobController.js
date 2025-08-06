@@ -53,9 +53,8 @@ const getAllJobs = async (req, res) => {
 // Get job by ID (Consultant only)
 const getJobById = async (req, res) => {
   try {
-    const consultantId = req.user.consultantId || req.user.id;
     const job = await Job.findOne({
-      where: { id: req.params.id, consultantId, isDeleted: false },
+      where: { id: req.params.id, isDeleted: false },
     });
     if (!job) return res.status(404).json({ message: "Job not found." });
     return res.status(200).json(job);
@@ -68,9 +67,8 @@ const getJobById = async (req, res) => {
 // Update job (Consultant only)
 const updateJob = async (req, res) => {
   try {
-    const consultantId = req.user.consultantId || req.user.id;
     const job = await Job.findOne({
-      where: { id: req.params.id, consultantId, isDeleted: false },
+      where: { id: req.params.id, isDeleted: false },
     });
     if (!job)
       return res
@@ -133,6 +131,27 @@ const getPublicJobs = async (req, res) => {
   }
 };
 
+
+
+const getJobsByConsultantId = async (req, res) => {
+  try {
+    const { consultantId } = req.params;
+
+    const jobs = await Job.findAll({
+      where: {
+        consultantId,
+        isDeleted: false,
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json(jobs);
+  } catch (error) {
+    console.error("Get Jobs Error:", error);
+    return res.status(500).json({ message: "Failed to fetch jobs." });
+  }
+};
+
 module.exports = {
   createJob,
   updateJob,
@@ -140,4 +159,5 @@ module.exports = {
   getAllJobs,
   getJobById,
   getPublicJobs,
+  getJobsByConsultantId,
 };

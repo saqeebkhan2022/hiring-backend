@@ -7,30 +7,47 @@ const {
   isConsultant,
   isAdminOrConsultant,
 } = require("../middleware/roleMiddleware");
+const upload = require("../middleware/multer");
 
-router.post("/", LeadController.createLead);
-router.get("/count", LeadController.TotalLeadCount);
-router.get("/:id", LeadController.getLeadById);
-router.get("/", LeadController.getAllLeads);
-router.put("/:id", LeadController.updateLead);
-router.delete("/:id", LeadController.deleteLead);
+// ✅ Create a new lead (requires file parsing)
+router.post("/", upload.any(), LeadController.createLead);
 
-router.post(
-  "/assign",
-  LeadController.assignLeadsToConsultant
-);
-
+// ✅ Total leads count
 router.get(
   "/count",
   authenticate,
   isAdminOrConsultant,
   LeadController.TotalLeadCount
 );
+
+// ✅ Lead status summary
 router.get(
   "/count/status-summary",
   authenticate,
   isAdminOrConsultant,
   LeadController.getLeadStatusSummary
 );
+
+// Get single lead by ID
+router.get("/:id", LeadController.getLeadById);
+
+// Get all leads
+router.get("/", authenticate, isAdmin, LeadController.getAllLeads);
+
+router.get(
+  "/consultant/:consultantId",
+  authenticate,
+  isConsultant,
+  LeadController.getLeadsAssignByConsultantId
+);
+
+// ✅ Update a lead
+router.put("/:id", LeadController.updateLead);
+
+// ✅ Delete a lead
+router.delete("/:id", LeadController.deleteLead);
+
+// ✅ Assign leads to consultant
+router.post("/assign", LeadController.assignLeadsToConsultant);
 
 module.exports = router;
