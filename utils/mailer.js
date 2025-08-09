@@ -12,7 +12,7 @@ const sendEmail = async (to, subject, html) => {
   try {
     const mailOptions = {
       from: `"DesertHire" <${process.env.EMAIL_USER}>`,
-      to: "shashank28691@gmail.com",
+      to: "saqeebkhan8271@gmail.com",
       subject,
       html,
     };

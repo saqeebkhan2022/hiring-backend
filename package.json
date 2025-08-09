@@ -24,7 +24,8 @@
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "razorpay": "^2.9.6",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "twilio": "^5.8.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
