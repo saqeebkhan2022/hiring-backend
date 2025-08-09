@@ -22,7 +22,6 @@ const createOrder = async (req, res) => {
         .json({ message: "consultantId and planVariantId are required." });
     }
 
-    // ✅ Find the selected plan variant
     const variant = await PlanVariant.findByPk(planVariantId, {
       include: {
         model: require("../models").Plan,
@@ -34,30 +33,28 @@ const createOrder = async (req, res) => {
       return res.status(404).json({ message: "Plan variant not found." });
     }
 
-    // ✅ Optional: Check if consultant exists
     const consultant = await Consultant.findByPk(consultantId);
     if (!consultant) {
       return res.status(404).json({ message: "Consultant not found." });
     }
 
-    // ✅ Create Razorpay order
+    const amountInPaise = Math.round(amount);
+
     const order = await razorpay.orders.create({
-      amount: amount, // Razorpay takes paise
+      amount: amountInPaise,
       currency: "INR",
       receipt: `rcpt_${Date.now()}`,
     });
 
-    // ✅ Save payment record in DB
     await Payment.create({
       consultantId,
       planVariantId,
-      amount: amount,
+      amount: Math.round(amount),
       currency: "INR",
       razorpayOrderId: order.id,
       status: "pending",
     });
 
-    // ✅ Return order to frontend
     res.status(201).json({
       orderId: order.id,
       amount: order.amount,
@@ -303,19 +300,17 @@ const getAllPayments = async (req, res) => {
 };
 
 const getTotalPaid = async (req, res) => {
+
   try {
     const now = new Date();
 
-    // 🔹 Current Month
     const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-    // 🔹 Previous Month
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-    // 🔸 This Month Total
-    const thisMonthTotal = await Payment.sum("amount", {
+    const thisMonthTotalPaise = await Payment.sum("amount", {
       where: {
         status: "paid",
         createdAt: {
@@ -325,8 +320,7 @@ const getTotalPaid = async (req, res) => {
       },
     });
 
-    // 🔸 Last Month Total
-    const lastMonthTotal = await Payment.sum("amount", {
+    const lastMonthTotalPaise = await Payment.sum("amount", {
       where: {
         status: "paid",
         createdAt: {
@@ -336,14 +330,17 @@ const getTotalPaid = async (req, res) => {
       },
     });
 
-    // 📈 Calculate Growth %
+    // Convert paise → rupees
+    const thisMonthTotal = (thisMonthTotalPaise || 0) / 100;
+    const lastMonthTotal = (lastMonthTotalPaise || 0) / 100;
+
     let growth = 0;
     if (lastMonthTotal > 0) {
       growth = ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
     }
 
     res.status(200).json({
-      totalPaid: thisMonthTotal || 0,
+      totalPaid: parseFloat(thisMonthTotal.toFixed(2)), // ₹ in 2 decimal
       growth: parseFloat(growth.toFixed(2)),
     });
   } catch (err) {
@@ -352,21 +349,27 @@ const getTotalPaid = async (req, res) => {
   }
 };
 
+// 📌 Get monthly earnings (grouped by month)
 const getMonthlyEarnings = async (req, res) => {
   try {
-    const monthlyEarnings = await Payment.findAll({
+    const monthlyEarningsPaise = await Payment.findAll({
       attributes: [
-        // Group by first day of the month
         [fn("DATE_TRUNC", "month", col("createdAt")), "month"],
-        [fn("SUM", col("amount")), "totalEarning"],
+        [fn("SUM", col("amount")), "totalEarningPaise"],
       ],
       where: {
-        status: "paid", // Only include paid payments
+        status: "paid",
       },
       group: [literal(`DATE_TRUNC('month', "createdAt")`)],
       order: [[literal(`month`), "ASC"]],
+      raw: true,
     });
 
+    // Convert all totals to rupees
+    const monthlyEarnings = monthlyEarningsPaise.map((entry) => ({
+      month: entry.month,
+      totalEarning: parseFloat((entry.totalEarningPaise / 100).toFixed(2)),
+    }));
     res.status(200).json(monthlyEarnings);
   } catch (error) {
     console.error("getMonthlyEarnings error:", error);

@@ -1,15 +1,12 @@
-
 "use strict";
 
 const { KYC } = require("../models");
 const sendSms = require("../utils/sendSMS");
-const sendEmail = require("../utils/mailer"); 
+const sendEmail = require("../utils/mailer");
 const generateOTP = require("../utils/generateOTP");
 const otpStore = require("../utils/otpStore");
 
-
-
-exports.sendVerificationOtps = async (req, res, next) => {
+const sendVerificationOtps = async (req, res, next) => {
   try {
     const { phone, aadhar, email, pan } = req.body;
 
@@ -81,14 +78,7 @@ exports.sendVerificationOtps = async (req, res, next) => {
   }
 };
 
-/**
- * Controller function to handle the final submission of KYC data after OTPs are verified.
- * This is the second step of the KYC process.
- * @param {object} req - The request object.
- * @param {object} res - The response object.
- * @param {function} next - The next middleware function.
- */
-exports.submitKyc = async (req, res, next) => {
+const submitKyc = async (req, res, next) => {
   try {
     const {
       name,
@@ -176,13 +166,50 @@ exports.submitKyc = async (req, res, next) => {
   } catch (error) {
     console.error("Error in submitKyc:", error);
     if (error.name === "SequelizeUniqueConstraintError") {
-      return res
-        .status(409)
-        .json({
-          message:
-            "A user with this email, company, or aadhar number already exists.",
-        });
+      return res.status(409).json({
+        message:
+          "A user with this email, company, or aadhar number already exists.",
+      });
     }
     next(error);
   }
+};
+
+const getAllKyc = async (req, res) => {
+  try {
+    const allKyc = await KYC.findAll({
+      where: {
+        status: "pending",
+      },
+      order: [["createdAt", "DESC"]],
+    });
+    return res.status(200).json(allKyc);
+  } catch (error) {
+    console.error("Error fetching all KYC records:", error);
+    res.status(500).json({
+      message: "Failed to fetch KYC records.",
+      error: error.message,
+    });
+  }
+};
+
+const getKycById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const kyc = await KYC.findByPk(id);
+    return res.status(200).json(kyc);
+  } catch (error) {
+    console.error(`Error fetching KYC record with id ${id}:`, error);
+    res.status(500).json({
+      message: `Failed to fetch KYC record with id ${id}.`,
+      error: error.message,
+    });
+  }
+};
+
+module.exports = {
+  submitKyc,
+  sendVerificationOtps,
+  getAllKyc,
+  getKycById,
 };
