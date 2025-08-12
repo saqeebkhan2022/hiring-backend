@@ -1,4 +1,5 @@
-const { Job } = require("../models");
+const { Job, Consultant } = require("../models");
+const { Op } = require("sequelize");
 
 // Create a new job (Consultant only)
 const createJob = async (req, res) => {
@@ -107,31 +108,45 @@ const deleteJob = async (req, res) => {
 };
 
 // ✅ Public job listing (no auth)
+
 const getPublicJobs = async (req, res) => {
   try {
     const jobs = await Job.findAll({
       where: { isDeleted: false },
-      // attributes: [
-      //   "jobTitle",
-      //   "company",
-      //   "location",
-      //   "salaryRange",
-      //   "applicationDeadline",
-      //   "quantity",
-      //   "visaStatus",
-      //   "createdAt",
-      // ],
+      include: [
+        {
+          model: Consultant,
+          as: "consultant",
+          attributes: ["logo"],
+        },
+      ],
       order: [["createdAt", "DESC"]],
     });
 
     return res.status(200).json(jobs);
   } catch (error) {
-    console.error("Public Job Fetch Error:", error);
-    return res.status(500).json({ message: "Failed to fetch public jobs." });
+    console.error("Error fetching public jobs:", error);
+    return res.status(500).json({ message: "Failed to fetch public jobs" });
   }
 };
 
+const getFeaturedPublicJobs = async (req, res) => {
+  try {
+    const jobs = await Job.findAll({
+      where: {
+        isFeaturedJob: true,
+      },
+      include: [{ model: Consultant, as: "consultant", attributes: ["logo"] }],
+      order: [["createdAt", "DESC"]],
+      limit: 6,
+    });
 
+    res.status(200).json(jobs);
+  } catch (error) {
+    console.error("Error fetching featured public jobs:", error);
+    res.status(500).json({ message: "Failed to fetch featured public jobs" });
+  }
+};
 
 const getJobsByConsultantId = async (req, res) => {
   try {
@@ -157,7 +172,8 @@ module.exports = {
   updateJob,
   deleteJob,
   getAllJobs,
-  getJobById,
   getPublicJobs,
+  getFeaturedPublicJobs,
+  getJobById,
   getJobsByConsultantId,
 };

@@ -24,6 +24,12 @@ module.exports = (sequelize) => {
         foreignKey: "kycId",
         onDelete: "SET NULL",
       });
+
+      Consultant.hasMany(models.Job, {
+        foreignKey: "consultantId",
+        as: "jobs",
+        onDelete: "CASCADE",
+      });
     }
   }
 
@@ -60,6 +66,19 @@ module.exports = (sequelize) => {
         type: DataTypes.ENUM("pending", "active", "rejected"),
         defaultValue: "pending",
       },
+
+      logo: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment: "Path or URL to consultant/company logo",
+      },
+
+      isTopConsultant: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: "Marks if this consultant is featured as top",
+      },
+
       isKycDone: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,

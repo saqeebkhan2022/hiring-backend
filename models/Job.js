@@ -9,6 +9,7 @@ module.exports = (sequelize, DataTypes) => {
           name: "consultantId",
           allowNull: false,
         },
+        as: "consultant",
         onDelete: "CASCADE",
       });
     }
@@ -95,6 +96,11 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       isDeleted: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+
+      },
+      isFeaturedJob: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },

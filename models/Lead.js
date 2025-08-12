@@ -21,9 +21,7 @@ module.exports = (sequelize, DataTypes) => {
       email: { type: DataTypes.STRING, allowNull: false },
       position: { type: DataTypes.STRING },
       status: { type: DataTypes.STRING },
-      experienceRequired: {
-        type: DataTypes.STRING,
-      },
+      experienceRequired: { type: DataTypes.STRING },
       documents: { type: DataTypes.JSON },
       jobId: { type: DataTypes.UUID },
       consultantId: {
@@ -38,6 +36,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Lead",
+      timestamps: true, 
+      paranoid: true, 
     }
   );
 

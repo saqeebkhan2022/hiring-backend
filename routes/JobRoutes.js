@@ -10,6 +10,8 @@ const {
 // ✅ Public route (no token required)
 router.get("/jobs/public-jobs", JobController.getPublicJobs);
 
+router.get("/jobs/featured/public-jobs", JobController.getFeaturedPublicJobs);
+
 // ✅ Authenticated routes
 router.post("/jobs", authenticate, JobController.createJob);
 
