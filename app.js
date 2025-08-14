@@ -15,6 +15,7 @@ const planVariantRoutes = require("./routes/planVariantRoutes");
 const planUpgradeHistoryRoutes = require("./routes/planUpgradeHistoryRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const kycRoutes = require("./routes/KycRoutes");
+const callRoutes = require("./routes/callRoutes");
 const path = require("path");
 const app = express();
 
@@ -43,5 +44,6 @@ app.use("/api/plan-variant", planVariantRoutes);
 app.use("/api/plan-upgrade", planUpgradeHistoryRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/kyc", kycRoutes);
+app.use("/api", callRoutes);
 
 module.exports = app;

@@ -61,7 +61,7 @@ const getLeadsAssignByConsultantId = async (req, res) => {
     const { consultantId } = req.params;
 
     const assignments = await LeadAssignment.findAll({
-      where: { consultantId },
+      where: { consultantId, isDeleted: false },
       include: [
         {
           model: Lead,

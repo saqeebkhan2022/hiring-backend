@@ -4,6 +4,7 @@ const Consultant = db.Consultant;
 const Lead = db.Lead;
 
 const AssignLeads = async (req, res) => {
+  
   9;
   try {
     const { consultantId, leadIds } = req.body;

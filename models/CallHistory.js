@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
       creditUsed: { type: DataTypes.STRING },
       lastCall: { type: DataTypes.DATEONLY },
       attempts: { type: DataTypes.INTEGER, defaultValue: 0 },
-
+      callSid: { type: DataTypes.STRING, allowNull: false },
       // Foreign key to Consultant
       consultantId: {
         type: DataTypes.UUID,
