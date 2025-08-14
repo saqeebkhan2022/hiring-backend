@@ -46,4 +46,14 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/kyc", kycRoutes);
 app.use("/api", callRoutes);
 
+// Twilio Voice Webhook
+app.post("/api/voice", (req, res) => {
+  res.type("text/xml");
+  res.send(`
+    <Response>
+      <Say voice="alice">Hello! This is a test call from your Node application using Twilio.</Say>
+    </Response>
+  `);
+});
+
 module.exports = app;

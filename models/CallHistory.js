@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
       },
       name: { type: DataTypes.STRING, allowNull: false },
+      notes: { type: DataTypes.STRING, allowNull: true },
       phone: { type: DataTypes.STRING, allowNull: false },
       status: { type: DataTypes.STRING, allowNull: false },
       duration: { type: DataTypes.STRING },
@@ -27,7 +28,6 @@ module.exports = (sequelize, DataTypes) => {
       lastCall: { type: DataTypes.DATEONLY },
       attempts: { type: DataTypes.INTEGER, defaultValue: 0 },
       callSid: { type: DataTypes.STRING, allowNull: false },
-      // Foreign key to Consultant
       consultantId: {
         type: DataTypes.UUID,
         allowNull: true, // Allow null temporarily (can change to false later)

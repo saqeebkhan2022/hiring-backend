@@ -34,7 +34,6 @@ const login = async (req, res) => {
             {
               model: PlanVariant,
               as: "planVariant",
-              attributes: ["id", "price", "duration_days", "call_access"],
               include: [
                 {
                   model: Plan,
@@ -88,6 +87,8 @@ const login = async (req, res) => {
           price: consultant.planVariant.price,
           duration_days: consultant.planVariant.duration_days,
           call_access: consultant.planVariant.call_access,
+          job_post_limit: consultant.planVariant.job_post_limit,
+          call_credit_limit: consultant.planVariant.call_credit_limit,
           plan: {
             id: consultant.planVariant.plan?.id,
             title: consultant.planVariant.plan?.title,
