@@ -91,6 +91,14 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+      insurance: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+      religion: {
+        type: DataTypes.STRING,
+        defaultValue: false,
+      },
       jobDescription: {
         type: DataTypes.TEXT,
         allowNull: false,
@@ -98,7 +106,6 @@ module.exports = (sequelize, DataTypes) => {
       isDeleted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
-
       },
       isFeaturedJob: {
         type: DataTypes.BOOLEAN,

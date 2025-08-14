@@ -3,7 +3,8 @@ const LeadAssignment = db.LeadAssignment;
 const Consultant = db.Consultant;
 const Lead = db.Lead;
 
-const AssignLeads = async (req, res) => {9
+const AssignLeads = async (req, res) => {
+  9;
   try {
     const { consultantId, leadIds } = req.body;
 
@@ -21,7 +22,7 @@ const AssignLeads = async (req, res) => {9
       });
 
       if (existing) {
-        skipped.push(leadId); // Already assigned → skip
+        skipped.push(leadId); 
         continue;
       }
 
@@ -64,7 +65,6 @@ const GetAssignments = async (req, res) => {
   }
 };
 
-
 const DeleteAssignment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -88,9 +88,47 @@ const DeleteAssignment = async (req, res) => {
   }
 };
 
+const updateStatus = async (req, res) => {
+  try {
+    const { id, consultantId, status } = req.body;
+
+    if (!id || !consultantId || !status) {
+      return res
+        .status(400)
+        .json({ message: "id, consultantId, and status are required." });
+    }
+
+    const assignment = await LeadAssignment.findOne({
+      where: {
+        // Find the LeadAssignment by its primary key (id) and consultantId (to ensure consultant owns it)
+
+        id,
+        consultantId,
+        isDeleted: false,
+      },
+    });
+
+    if (!assignment) {
+      return res
+        .status(404)
+        .json({ message: "Assignment not found or access denied." });
+    }
+
+    // Update the status
+    await assignment.update({ status });
+
+    return res
+      .status(200)
+      .json({ message: "Status updated successfully.", assignment });
+  } catch (error) {
+    console.error("Error updating status:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 module.exports = {
   AssignLeads,
   GetAssignments,
-  DeleteAssignment
+  DeleteAssignment,
+  updateStatus,
 };

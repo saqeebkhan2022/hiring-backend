@@ -45,6 +45,19 @@ module.exports = (sequelize) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+      status: {
+        type: DataTypes.ENUM(
+          "Pending",
+          "UnderReview",
+          "Interview",
+          "Medical",
+          "Shortlisted",
+          "Rejected",
+          "Completed"
+        ),
+        defaultValue: "Pending",
+        allowNull: false,
+      },
     },
     {
       sequelize,

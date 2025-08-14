@@ -20,7 +20,7 @@ router.get("/jobs", JobController.getAllJobs);
 router.get(
   "/my-jobs/:consultantId",
   authenticate,
-  isConsultant,
+  isAdminOrConsultant,
   JobController.getJobsByConsultantId
 );
 
