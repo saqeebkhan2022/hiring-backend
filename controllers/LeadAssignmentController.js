@@ -127,9 +127,68 @@ const updateStatus = async (req, res) => {
   }
 };
 
+
+const GetTotalLeadCountByConsultant = async (req, res) => {
+  try {
+    const { consultantId } = req.params;
+
+    const totalCount = await LeadAssignment.count({
+      where: { consultantId, isDeleted: false },
+    });
+
+    return res.status(200).json({ consultantId, total: totalCount });
+  } catch (error) {
+    console.error("Error fetching total lead count:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+const GetLeadStatusCountsByConsultant = async (req, res) => {
+  try {
+    const { consultantId } = req.params;
+
+    const stats = await LeadAssignment.findAll({
+      where: { consultantId, isDeleted: false },
+      attributes: [
+        "status",
+        [db.Sequelize.fn("COUNT", db.Sequelize.col("id")), "count"],
+      ],
+      group: ["status"],
+    });
+
+    // Prepare response
+    const result = {
+      consultantId,
+      total: 0,
+      Rejected: 0,
+      UnderReview: 0,
+      Shortlisted: 0,
+      Pending: 0,
+      Medical: 0,
+      Completed: 0,
+    };
+
+    stats.forEach((row) => {
+      const status = row.get("status");
+      const count = parseInt(row.get("count"), 10);
+      result[status] = count;
+      result.total += count;
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching lead status counts:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 module.exports = {
   AssignLeads,
   GetAssignments,
   DeleteAssignment,
   updateStatus,
+  GetTotalLeadCountByConsultant,
+  GetLeadStatusCountsByConsultant
 };

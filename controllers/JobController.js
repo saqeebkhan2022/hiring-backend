@@ -87,23 +87,32 @@ const updateJob = async (req, res) => {
 // Soft delete job
 const deleteJob = async (req, res) => {
   try {
-    const consultantId = req.user.consultantId || req.user.id;
+    const { consultantId, id } = req.params;
+
     const job = await Job.findOne({
-      where: { id: req.params.id, consultantId, isDeleted: false },
+      where: {
+        id,
+        consultantId,
+        isDeleted: false,
+      },
     });
-    if (!job)
-      return res
-        .status(404)
-        .json({ message: "Job not found or already deleted." });
+
+    if (!job) {
+      return res.status(404).json({
+        message: "Job not found or already deleted.",
+      });
+    }
 
     await job.update({ isDeleted: true });
 
-    return res
-      .status(200)
-      .json({ message: "Job deleted successfully (soft delete)." });
+    return res.status(200).json({
+      message: "Job deleted successfully (soft delete).",
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Failed to delete job." });
+    console.error("Delete Job Error:", error);
+    return res.status(500).json({
+      message: "Failed to delete job.",
+    });
   }
 };
 
