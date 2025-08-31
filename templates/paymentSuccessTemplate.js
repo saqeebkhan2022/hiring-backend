@@ -1,7 +1,7 @@
 module.exports = ({ name, plan, amount, duration }) => `
   <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 24px; max-width: 600px; margin: auto; background-color: #f9f9f9; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
     <div style="background-color: #4caf50; padding: 16px; border-radius: 8px 8px 0 0; text-align: center;">
-      <h2 style="color: #fff; margin: 0;">✅ Payment Successful</h2>
+      <h2 style="color: #fff; margin: 0;">Payment Successful</h2>
     </div>
 
     <div style="background-color: #ffffff; padding: 24px;">

@@ -1,8 +1,8 @@
-// index.js
+
 require("dotenv").config();
 
-const app = require("./app"); // Express app with routes/middleware
-const { sequelize } = require("./models"); // Load Sequelize instance via models/index.js
+const app = require("./app");
+const { sequelize } = require("./models");
 
 const PORT = process.env.PORT || 3000;
 
