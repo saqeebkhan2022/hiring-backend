@@ -1,26 +1,44 @@
 {
   "development": {
-    "username": "postgres",
-    "password": "test123",
-    "database": "deserthire",
-    "host": "127.0.0.1",
+    "username": "postgres.cxdasgqhogalmvfoskmh",
+    "password": "Test@123",
+    "database": "postgres",
+    "host": "aws-1-ap-southeast-1.pooler.supabase.com",
+    "port": 6543,
     "dialect": "postgres",
-    "logging": false
+    "logging": false,
+    "dialectOptions": {
+      "ssl": {
+        "rejectUnauthorized": false
+      }
+    }
   },
   "test": {
-    "username": "postgres",
-    "password": "test123",
-    "database": "deserthire",
-    "host": "127.0.0.1",
+    "username": "postgres.cxdasgqhogalmvfoskmh",
+    "password": "Test@123",
+    "database": "postgres",
+    "host": "aws-1-ap-southeast-1.pooler.supabase.com",
+    "port": 6543,
     "dialect": "postgres",
-    "logging": false
+    "logging": false,
+    "dialectOptions": {
+      "ssl": {
+        "rejectUnauthorized": false
+      }
+    }
   },
   "production": {
-    "username": "postgres",
-    "password": "test123",
-    "database": "deserthire",
-    "host": "127.0.0.1",
+    "username": "postgres.cxdasgqhogalmvfoskmh",
+    "password": "Test@123",
+    "database": "postgres",
+    "host": "aws-1-ap-southeast-1.pooler.supabase.com",
+    "port": 6543,
     "dialect": "postgres",
-    "logging": false
+    "logging": false,
+    "dialectOptions": {
+      "ssl": {
+        "rejectUnauthorized": false
+      }
+    }
   }
 }
