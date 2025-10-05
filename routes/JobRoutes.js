@@ -24,6 +24,7 @@ router.get(
   JobController.getJobsByConsultantId
 );
 
+router.patch("/toggle-featured/:id", JobController.toggleFeaturedJob);
 router.get("/jobs/:id", JobController.getJobById);
 router.put("/jobs/:id", JobController.updateJob);
 router.delete("/jobs/delete/:consultantId/:id", JobController.deleteJob);

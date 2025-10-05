@@ -1,215 +1,298 @@
 "use strict";
 
-const { KYC } = require("../models");
+// const Otp = require("../models/Otp");
+// const KYC = require("../models/KYC");
+const { KYC, Otp } = require("../models");
 const sendSms = require("../utils/sendSMS");
 const sendEmail = require("../utils/mailer");
 const generateOTP = require("../utils/generateOTP");
-const otpStore = require("../utils/otpStore");
 
+// 1. Send OTPs
 const sendVerificationOtps = async (req, res, next) => {
   try {
-    const { phone, aadhar, email, pan } = req.body;
+    const { phone, email, aadhar, pan } = req.body;
 
-    // Validate that at least a phone number and email are provided
-    if (!phone || !email) {
+    // Require at least one field
+    if (!phone && !email && !aadhar && !pan) {
       return res
         .status(400)
-        .json({ message: "Phone number and email are required." });
+        .json({ message: "Provide at least one field to verify." });
     }
 
-    // Generate OTPs for all provided fields
-    const phoneOtp = generateOTP();
-    const emailOtp = generateOTP();
-    const aadharOtp = aadhar ? generateOTP() : null;
-    const panOtp = pan ? generateOTP() : null;
-    const otpExpiry = Date.now() + 10 * 60 * 1000;
+    const now = new Date();
 
-    // Generate a unique temporary ID for this session
-    const tempId = generateOTP();
-
-    // Store the generated OTPs and expiry time in our temporary store
-    otpStore.set(tempId, {
-      phoneOtp,
-      emailOtp,
-      aadharOtp,
-      panOtp,
-      otpExpiry,
+    // Fetch latest OTP session
+    let otpRecord = await Otp.findOne({
+      order: [["createdAt", "DESC"]],
     });
 
-    // Send phone OTP via Twilio
-    await sendSms(
-      phone,
-      `Your verification code for DesertHire is: ${phoneOtp}. It is valid for 10 minutes.`
-    );
-
-    // Send email OTP via Nodemailer
-    const emailSubject = "Email Verification OTP for DesertHire";
-    const emailHtml = `
-      <h1>Hello,</h1>
-      <p>Your email verification code is: <strong>${emailOtp}</strong></p>
-      <p>This code is valid for 10 minutes.</p>
-    `;
-    await sendEmail(email, emailSubject, emailHtml);
-
-    // If Aadhar is provided, send Aadhar OTP
-    if (aadhar) {
-      await sendSms(
-        phone, // Assuming Aadhar service provides a way to send OTPs, for this example we use the same phone number
-        `Your Aadhar verification code for DesertHire is: ${aadharOtp}.`
-      );
+    // If no session exists or expired, create a new session
+    if (!otpRecord || otpRecord.expiry < now) {
+      otpRecord = await Otp.create({
+        tempId: generateOTP(), // new tempId for this session
+        phoneOtp: null,
+        emailOtp: null,
+        aadharOtp: null,
+        panOtp: null,
+        expiry: new Date(now.getTime() + 10 * 60 * 1000), // 10 minutes
+        isPhoneVerified: false,
+        isEmailVerified: false,
+        isAadharVerified: false,
+        isPanVerified: false,
+      });
     }
 
-    // If PAN is provided, send PAN OTP
-    if (pan) {
-      await sendSms(
-        phone, // Assuming PAN service provides a way to send OTPs, for this example we use the same phone number
-        `Your PAN verification code for DesertHire is: ${panOtp}.`
-      );
+    // Generate OTPs only for requested fields that are not verified yet
+    if (phone && !otpRecord.isPhoneVerified) {
+      otpRecord.phoneOtp = generateOTP();
+    }
+    if (email && !otpRecord.isEmailVerified) {
+      otpRecord.emailOtp = generateOTP();
+    }
+    if (aadhar && !otpRecord.isAadharVerified) {
+      otpRecord.aadharOtp = generateOTP();
+    }
+    if (pan && !otpRecord.isPanVerified) {
+      otpRecord.panOtp = generateOTP();
     }
 
+    // Extend expiry
+    otpRecord.expiry = new Date(now.getTime() + 10 * 60 * 1000);
+    await otpRecord.save();
+
+    // Send OTPs
+    if (phone && otpRecord.phoneOtp) {
+      await sendSms(phone, `Your phone OTP is ${otpRecord.phoneOtp}`);
+    }
+    if (email && otpRecord.emailOtp) {
+      await sendEmail(
+        email,
+        "Email Verification OTP",
+        `<p>Your OTP is: ${otpRecord.emailOtp}</p>`
+      );
+    }
+    if (aadhar && otpRecord.aadharOtp) {
+      // optionally send via SMS if you have a number
+    }
+    if (pan && otpRecord.panOtp) {
+      // optionally send via SMS or email
+    }
+
+    // Return tempId to frontend (use same tempId for all fields)
     return res.status(200).json({
-      message:
-        "Verification codes sent. Please submit them to complete the process.",
-      tempId,
+      message: "Verification code(s) sent. Please submit them to verify.",
+      tempId: otpRecord.tempId,
     });
   } catch (error) {
     console.error("Error in sendVerificationOtps:", error);
     next(error);
   }
 };
-
-const submitKyc = async (req, res, next) => {
+//
+// 2. Verify OTP (stepwise)
+//
+const verifyOtp = async (req, res) => {
   try {
-    const {
-      name,
-      company,
-      email,
-      phone,
-      aadhar,
-      pan,
-      licenseNumber,
-      licenseExpiryDate,
-      signature,
-      policeClearance,
-      licenseDocument,
-      // OTPs and tempId are now part of the request body for verification
-      phoneOtp,
-      emailOtp,
-      aadharOtp,
-      panOtp,
-      tempId,
-    } = req.body;
+    const { tempId, type, otp } = req.body;
 
-    // 1. Verify the temporary ID and OTPs
-    const storedOtps = otpStore.get(tempId);
-    if (!storedOtps || storedOtps.otpExpiry < Date.now()) {
-      return res
-        .status(400)
-        .json({ message: "Invalid or expired session. Please resend OTPs." });
+    const otpRecord = await Otp.findOne({ where: { tempId } });
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid session. Resend OTPs." });
     }
 
-    // Check if the provided OTPs match the stored ones
-    const isPhoneOtpValid = storedOtps.phoneOtp === phoneOtp;
-    const isEmailOtpValid = storedOtps.emailOtp === emailOtp;
-    const isAadharOtpValid = !aadhar || storedOtps.aadharOtp === aadharOtp; // Aadhar OTP is optional
-    const isPanOtpValid = !pan || storedOtps.panOtp === panOtp; // PAN OTP is optional
-
-    if (
-      !isPhoneOtpValid ||
-      !isEmailOtpValid ||
-      !isAadharOtpValid ||
-      !isPanOtpValid
-    ) {
-      return res
-        .status(400)
-        .json({ message: "One or more OTPs are incorrect." });
+    if (otpRecord.expiry < new Date()) {
+      return res.status(400).json({ message: "OTP session expired." });
     }
 
-    // 2. If OTPs are valid, create the final KYC record
-    const newKyc = await KYC.create({
-      name,
-      company,
-      email,
-      phone,
-      aadhar,
-      pan,
-      licenseNumber,
-      licenseExpiryDate,
-      signature,
-      policeClearance,
-      licenseDocument,
-      // Since OTPs were verified, we can set the verified status directly
-      isPhoneVerified: true,
-      emailVerified: true,
-      aadharVerified: !!aadhar, // Sets to true if aadhar exists, false otherwise
-      aadharVerificationStatus: aadhar ? "verified" : "pending",
-      panVerified: !!pan, // Sets to true if pan exists, false otherwise
-      panVerificationStatus: pan ? "verified" : "pending",
-      status: "pending", // Still needs manual review
-    });
+    let isValid = false;
 
-    // 3. Clear the temporary OTP data
-    otpStore.delete(tempId);
+    switch (type) {
+      case "phone":
+        isValid = otpRecord.phoneOtp === otp;
+        if (isValid) otpRecord.isPhoneVerified = true;
+        break;
+      case "email":
+        isValid = otpRecord.emailOtp === otp;
+        if (isValid) otpRecord.isEmailVerified = true;
+        break;
+      case "aadhar":
+        isValid = otpRecord.aadharOtp === otp;
+        if (isValid) otpRecord.isAadharVerified = true;
+        break;
+      case "pan":
+        isValid = otpRecord.panOtp === otp;
+        if (isValid) otpRecord.isPanVerified = true;
+        break;
+      default:
+        return res.status(400).json({ message: "Invalid verification type." });
+    }
 
-    // Send a final confirmation email to the user
-    const emailSubject = "KYC Application Submitted";
-    const emailHtml = `
-      <h1>Hello ${name},</h1>
-      <p>Thank you for submitting your verified KYC application. We will review your documents and update your status shortly.</p>
-    `;
-    await sendEmail(email, emailSubject, emailHtml);
+    if (!isValid) {
+      return res.status(400).json({ message: "Incorrect OTP." });
+    }
 
-    return res.status(201).json({
-      message: "KYC application submitted and verified successfully.",
-      kycId: newKyc.id,
+    await otpRecord.save();
+
+    return res.status(200).json({
+      message: `${type} OTP verified successfully.`,
+      verified: true,
     });
   } catch (error) {
-    console.error("Error in submitKyc:", error);
-    if (error.name === "SequelizeUniqueConstraintError") {
-      return res.status(409).json({
-        message:
-          "A user with this email, company, or aadhar number already exists.",
-      });
-    }
-    next(error);
+    console.error("Error in verifyOtp:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
+//
+// 3. Submit KYC (after OTPs verified)
+//
+const submitKyc = async (req, res, next) => {
+  const {
+    tempId,
+    name,
+    company,
+    email,
+    phone,
+    aadhar,
+    pan,
+    licenseNumber,
+    licenseExpiryDate,
+    signature,
+    policeClearance,
+    licenseDocument,
+  } = req.body;
+
+  const otpRecord = await Otp.findOne({ where: { tempId } });
+  if (!otpRecord)
+    return res
+      .status(400)
+      .json({ message: "Session expired. Please resend OTPs." });
+
+  if (!otpRecord.isPhoneVerified || !otpRecord.isEmailVerified) {
+    return res
+      .status(400)
+      .json({ message: "Phone and Email must be verified." });
+  }
+
+  const newKyc = await KYC.create({
+    name,
+    company,
+    email,
+    phone,
+    aadhar,
+    pan,
+    licenseNumber,
+    licenseExpiryDate,
+    signature,
+    policeClearance,
+    licenseDocument,
+    isPhoneVerified: true,
+    emailVerified: true,
+    aadharVerified: !!aadhar && otpRecord.isAadharVerified,
+    panVerified: !!pan && otpRecord.isPanVerified,
+    status: "pending",
+  });
+
+  await otpRecord.destroy();
+  await sendEmail(
+    email,
+    "KYC Submitted",
+    `<h1>Hello ${name}</h1><p>Your KYC has been submitted.</p>`
+  );
+
+  return res
+    .status(201)
+    .json({ message: "KYC submitted successfully.", kycId: newKyc.id });
+};
+
+//
+// 4. Admin: Get all pending KYC
+//
 const getAllKyc = async (req, res) => {
   try {
     const allKyc = await KYC.findAll({
-      where: {
-        status: "pending",
-      },
+      where: { status: "pending" },
       order: [["createdAt", "DESC"]],
     });
     return res.status(200).json(allKyc);
   } catch (error) {
-    console.error("Error fetching all KYC records:", error);
-    res.status(500).json({
-      message: "Failed to fetch KYC records.",
-      error: error.message,
-    });
+    console.error("Error fetching KYC records:", error);
+    res.status(500).json({ message: "Failed to fetch KYC records." });
   }
 };
 
-const getKycById = async (req, res) => {
+//
+// 5. Get KYC by ID
+//
+// const getKycById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const kyc = await KYC.findByPk(id);
+//     if (!kyc) return res.status(404).json({ message: "KYC record not found" });
+//     return res.status(200).json(kyc);
+//   } catch (error) {
+//     console.error(`Error fetching KYC record:`, error);
+//     res.status(500).json({ message: "Failed to fetch KYC record." });
+//   }
+// };
+
+const getVerifiedKyc = async (req, res) => {
+  try {
+    const kycs = await KYC.findAll({
+      where: { verified: true }, // only verified KYC
+      order: [["createdAt", "DESC"]],
+      attributes: ["id", "name", "email", "phone", "company"],
+    });
+    return res.status(200).json(kycs);
+  } catch (error) {
+    console.error("Error fetching KYC records:", error);
+    return res.status(500).json({ message: "Failed to fetch KYC records." });
+  }
+};
+
+//
+// 6. Update KYC
+//
+const updateKyc = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const kyc = await KYC.findByPk(id);
+    if (!kyc) return res.status(404).json({ message: "KYC not found." });
+
+    await kyc.update(updateData);
+    return res.status(200).json({ message: "KYC updated successfully.", kyc });
+  } catch (error) {
+    console.error("Error updating KYC:", error);
+    res.status(500).json({ message: "Failed to update KYC." });
+  }
+};
+
+//
+// 7. Delete KYC
+//
+const deleteKyc = async (req, res) => {
   try {
     const { id } = req.params;
     const kyc = await KYC.findByPk(id);
-    return res.status(200).json(kyc);
+    if (!kyc) return res.status(404).json({ message: "KYC not found." });
+
+    await kyc.destroy();
+    return res.status(200).json({ message: "KYC deleted successfully." });
   } catch (error) {
-    console.error(`Error fetching KYC record with id ${id}:`, error);
-    res.status(500).json({
-      message: `Failed to fetch KYC record with id ${id}.`,
-      error: error.message,
-    });
+    console.error("Error deleting KYC:", error);
+    res.status(500).json({ message: "Failed to delete KYC." });
   }
 };
 
 module.exports = {
-  submitKyc,
   sendVerificationOtps,
+  verifyOtp,
+  submitKyc,
   getAllKyc,
-  getKycById,
+  getVerifiedKyc,
+  // getKycById,
+  updateKyc,
+  deleteKyc,
 };

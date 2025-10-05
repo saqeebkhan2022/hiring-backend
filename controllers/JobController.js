@@ -1,4 +1,4 @@
-const { Job, Consultant } = require("../models");
+const { Job, Consultant, KYC, PositionAmount } = require("../models");
 const { Op } = require("sequelize");
 
 // Create a new job (Consultant only)
@@ -12,9 +12,17 @@ const createJob = async (req, res) => {
       });
     }
 
+    // Lookup leadAmount based on jobTitle (which is the position)
+    const positionData = await PositionAmount.findOne({
+      where: { position: req.body.jobTitle },
+    });
+
+    const leadAmount = positionData ? positionData.amount : 0;
+
     const jobData = {
       ...req.body,
       consultantId,
+      leadAmount, // set automatically from PositionAmount
     };
 
     const job = await Job.create(jobData);
@@ -40,17 +48,30 @@ const getAllJobs = async (req, res) => {
     const jobs = await Job.findAll({
       where: {
         isDeleted: false,
-        ...(consultantId ? { consultantId } : {}), // only filter if consultantId exists
+        ...(consultantId ? { consultantId } : {}), // filter if consultantId exists
       },
+      include: [
+        {
+          model: Consultant,
+          as: "consultant",
+          attributes: ["id", "name", "kycId"],
+          include: [
+            {
+              model: KYC,
+              attributes: ["logo"], // fetch logo from KYC
+            },
+          ],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
     });
 
     return res.status(200).json(jobs);
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching jobs:", error);
     return res.status(500).json({ message: "Failed to fetch jobs." });
   }
 };
-
 // Get job by ID (Consultant only)
 const getJobById = async (req, res) => {
   try {
@@ -126,7 +147,13 @@ const getPublicJobs = async (req, res) => {
         {
           model: Consultant,
           as: "consultant",
-          attributes: ["logo"],
+          attributes: ["id", "name", "kycId"],
+          include: [
+            {
+              model: KYC,
+              attributes: ["logo"],
+            },
+          ],
         },
       ],
       order: [["createdAt", "DESC"]],
@@ -145,7 +172,19 @@ const getFeaturedPublicJobs = async (req, res) => {
       where: {
         isFeaturedJob: true,
       },
-      include: [{ model: Consultant, as: "consultant", attributes: ["logo"] }],
+      include: [
+        {
+          model: Consultant,
+          as: "consultant",
+          attributes: ["id", "name", "email"],
+          include: [
+            {
+              model: KYC,
+              attributes: ["logo"],
+            },
+          ],
+        },
+      ],
       order: [["createdAt", "DESC"]],
       limit: 6,
     });
@@ -176,6 +215,24 @@ const getJobsByConsultantId = async (req, res) => {
   }
 };
 
+const toggleFeaturedJob = async (req, res) => {
+  try {
+    const { id } = req.params; // job id
+    const job = await Job.findByPk(id);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+
+    job.isFeaturedJob = !job.isFeaturedJob; // toggle true/false
+    await job.save();
+
+    res
+      .status(200)
+      .json({ message: "Job updated", isFeaturedJob: job.isFeaturedJob });
+  } catch (err) {
+    console.error("Error toggling featured job:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
   createJob,
   updateJob,
@@ -185,4 +242,5 @@ module.exports = {
   getFeaturedPublicJobs,
   getJobById,
   getJobsByConsultantId,
+  toggleFeaturedJob,
 };

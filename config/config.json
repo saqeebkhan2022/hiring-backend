@@ -17,7 +17,7 @@
   },
   "production": {
     "username": "postgres",
-    "password": "newpassword123",
+    "password": "test123",
     "database": "deserthire",
     "host": "127.0.0.1",
     "dialect": "postgres",

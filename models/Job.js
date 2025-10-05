@@ -111,6 +111,8 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+      appliedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+      leadAmount: { type: DataTypes.FLOAT, defaultValue: 0.0 },
     },
     {
       sequelize,

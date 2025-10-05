@@ -45,6 +45,11 @@ module.exports = (sequelize) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+      lockStatus: {
+        type: DataTypes.ENUM("Locked", "Unlocked"),
+        defaultValue: "Locked",
+        allowNull: false,
+      },
       status: {
         type: DataTypes.ENUM(
           "Pending",
@@ -58,7 +63,17 @@ module.exports = (sequelize) => {
         defaultValue: "Pending",
         allowNull: false,
       },
+      assignmentStatus: {
+        type: DataTypes.ENUM("New", "Old", "Reassigned"),
+        defaultValue: "New",
+        allowNull: false,
+      },
+      unlockedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
+
     {
       sequelize,
       modelName: "LeadAssignment",

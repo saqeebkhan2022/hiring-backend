@@ -6,6 +6,14 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Lead.belongsTo(models.Job, { foreignKey: "jobId" });
       Lead.belongsTo(models.Consultant, { foreignKey: "consultantId" });
+
+      // Link Lead to PositionAmount based on position name (string)
+      Lead.belongsTo(models.PositionAmount, {
+        foreignKey: "position",
+        targetKey: "position",
+        as: "positionAmount",
+        constraints: false, // prevents foreign key UUID mismatch
+      });
     }
   }
 
@@ -19,11 +27,16 @@ module.exports = (sequelize, DataTypes) => {
       name: { type: DataTypes.STRING, allowNull: false },
       phone: { type: DataTypes.STRING, allowNull: false },
       email: { type: DataTypes.STRING, allowNull: false },
-      position: { type: DataTypes.STRING },
+      position: { type: DataTypes.STRING, allowNull: false }, // ensure not null
       status: { type: DataTypes.STRING },
       experienceRequired: { type: DataTypes.STRING },
       documents: { type: DataTypes.JSON },
       jobId: { type: DataTypes.UUID },
+
+      paymentStatus: {
+        type: DataTypes.ENUM("pending", "paid", "failed"),
+        defaultValue: "pending",
+      },
       consultantId: {
         type: DataTypes.UUID,
         allowNull: false,
@@ -36,8 +49,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Lead",
-      timestamps: true, 
-      paranoid: true, 
+      timestamps: true,
+      paranoid: true,
     }
   );
 

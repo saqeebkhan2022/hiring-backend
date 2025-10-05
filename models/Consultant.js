@@ -52,12 +52,9 @@ module.exports = (sequelize) => {
           isEmail: true,
         },
       },
-      company: {
-        type: DataTypes.STRING,
-        unique: true,
-      },
+
       phone: DataTypes.STRING,
-      photo: DataTypes.STRING,
+
       verified: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
@@ -65,12 +62,6 @@ module.exports = (sequelize) => {
       status: {
         type: DataTypes.ENUM("pending", "active", "rejected"),
         defaultValue: "pending",
-      },
-
-      logo: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        comment: "Path or URL to consultant/company logo",
       },
 
       isTopConsultant: {
@@ -101,20 +92,21 @@ module.exports = (sequelize) => {
           key: "id",
         },
       },
-      planVariantId: {
-        type: DataTypes.UUID,
-        references: {
-          model: "PlanVariants",
-          key: "id",
-        },
-        allowNull: true,
-      },
-      planPurchasedAt: {
-        type: DataTypes.DATE,
-      },
-      planExpiresAt: {
-        type: DataTypes.DATE,
-      },
+      leadCredits: { type: DataTypes.INTEGER, defaultValue: 0 },
+      // planVariantId: {
+      //   type: DataTypes.UUID,
+      //   references: {
+      //     model: "PlanVariants",
+      //     key: "id",
+      //   },
+      //   allowNull: true,
+      // },
+      // planPurchasedAt: {
+      //   type: DataTypes.DATE,
+      // },
+      // planExpiresAt: {
+      //   type: DataTypes.DATE,
+      // },
     },
     {
       sequelize,

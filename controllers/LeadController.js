@@ -24,7 +24,7 @@ const getAllLeads = async (req, res) => {
       //   "consultantId",
       //   "createdAt",
       // ],
-      include: [{ model: Job, attributes: ["jobTitle"] }],
+      include: [{ model: Job, attributes: ["jobTitle", "leadAmount"] }],
       order: [["createdAt", "DESC"]],
     });
 
@@ -68,7 +68,7 @@ const getLeadsAssignByConsultantId = async (req, res) => {
           include: [
             {
               model: Job,
-              attributes: ["jobTitle"], // Optional if useful to show job info
+              attributes: ["jobTitle", "leadAmount"], // Optional if useful to show job info
             },
           ],
         },

@@ -19,6 +19,12 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         unique: true,
       },
+      photograph: DataTypes.STRING,
+      logo: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment: "Path or URL to consultant/company logo",
+      },
       email: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -57,11 +63,11 @@ module.exports = (sequelize) => {
         type: DataTypes.ENUM("pending", "verified", "failed"),
         defaultValue: "pending",
       },
-      aadharVerificationRef: DataTypes.STRING,
+      // aadharVerificationRef: DataTypes.STRING,
 
       pan: DataTypes.STRING,
       panCategory: DataTypes.STRING,
-      panStatus: DataTypes.STRING,
+      panStatus: DataTypes.ENUM("Active", "Inactive"),
       panDob: DataTypes.STRING,
       panVerified: {
         type: DataTypes.BOOLEAN,
@@ -73,7 +79,7 @@ module.exports = (sequelize) => {
         defaultValue: "pending",
       },
 
-      panVerificationRef: DataTypes.STRING,
+      // panVerificationRef: DataTypes.STRING,
 
       panVerificationDate: DataTypes.DATE,
       licenseNumber: DataTypes.STRING,
@@ -87,9 +93,10 @@ module.exports = (sequelize) => {
         defaultValue: false,
       },
       status: {
-        type: DataTypes.ENUM("pending", "active", "rejected"),
+        type: DataTypes.ENUM("pending", "done", "rejected"),
         defaultValue: "pending",
       },
+      verified: DataTypes.BOOLEAN,
     },
     {
       sequelize,

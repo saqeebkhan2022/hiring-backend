@@ -16,6 +16,7 @@ const planUpgradeHistoryRoutes = require("./routes/planUpgradeHistoryRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const kycRoutes = require("./routes/KycRoutes");
 const callRoutes = require("./routes/callRoutes");
+const PositionAmountRoutes = require("./routes/positionAmountRoutes");
 const path = require("path");
 const app = express();
 
@@ -30,6 +31,7 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 app.use("/api/consultant", consultant);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
@@ -43,8 +45,9 @@ app.use("/api/plans", planRoutes);
 app.use("/api/plan-variant", planVariantRoutes);
 app.use("/api/plan-upgrade", planUpgradeHistoryRoutes);
 app.use("/api/payment", paymentRoutes);
-app.use("/api/kyc", kycRoutes);
+app.use("/api", kycRoutes);
 app.use("/api", callRoutes);
+app.use("/api/position-amount", PositionAmountRoutes);
 
 // Twilio Voice Webhook
 app.post("/api/voice", (req, res) => {

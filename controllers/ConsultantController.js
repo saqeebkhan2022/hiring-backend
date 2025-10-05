@@ -2,6 +2,7 @@ const db = require("../models");
 const Consultant = db.Consultant;
 const User = db.User;
 const Role = db.Role;
+const KYC = db.KYC;
 const PlanVariant = db.PlanVariant;
 const Plan = db.Plan;
 const sequelize = db.sequelize;
@@ -10,30 +11,13 @@ const bcrypt = require("bcrypt");
 const AddConsultant = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const {
-      name,
-      email,
-      password,
-      company,
-      phone,
-      photo,
-      aadhar,
-      pan,
-      signature,
-      policeClearance,
-      status,
-    } = req.body;
+    const { name, email, company, phone, status, kycId } = req.body;
 
     const existingUser = await User.findOne({ where: { email }, transaction });
     if (existingUser) {
       await transaction.rollback();
-      return res
-        .status(400)
-        .json({ message: "User already exists with this email." });
+      return res.status(400).json({ message: "User already exists." });
     }
-
-    // 🔑 1️⃣ Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10); // 10 salt rounds
 
     const consultantRole = await Role.findOne({
       where: { name: "Consultant" },
@@ -43,6 +27,10 @@ const AddConsultant = async (req, res) => {
       await transaction.rollback();
       return res.status(400).json({ message: "Role 'Consultant' not found." });
     }
+
+    // Generate password as "name@123"
+    const password = `${name.replace(/\s+/g, "")}@123`; // remove spaces from name
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create(
       {
@@ -55,19 +43,14 @@ const AddConsultant = async (req, res) => {
       { transaction }
     );
 
-    // 4️⃣ Create Consultant linked to User
     const consultant = await Consultant.create(
       {
         name,
         email,
         company,
         phone,
-        photo,
-        aadhar,
-        pan,
-        signature,
-        policeClearance,
         verified: true,
+        kycId,
         userId: user.id,
         status: status || "pending",
       },
@@ -77,9 +60,10 @@ const AddConsultant = async (req, res) => {
     await transaction.commit();
 
     res.status(201).json({
-      message: "Consultant and user created successfully.",
+      message: "Consultant created successfully.",
       user,
       consultant,
+      generatedPassword: password, // optional: send generated password in response
     });
   } catch (err) {
     console.error("Error adding consultant:", err);
@@ -97,6 +81,19 @@ const AllConsultant = async (req, res) => {
           attributes: ["id", "name", "email", "verified"],
         },
         {
+          model: KYC,
+          attributes: [
+            "id",
+            "company",
+            "status",
+            "photograph",
+            "aadhar",
+            "pan",
+            "signature",
+            "policeClearance",
+          ],
+        },
+        {
           model: PlanVariant,
           as: "planVariant",
           include: [
@@ -109,7 +106,18 @@ const AllConsultant = async (req, res) => {
       ],
     });
 
-    res.status(200).json({ consultants });
+    // Flatten KYC info into consultant object
+    const result = consultants.map((c) => {
+      const kyc = c.KYC ? c.KYC.toJSON() : null;
+      const consultant = c.toJSON();
+      if (kyc) {
+        consultant.kyc = kyc;
+      }
+      delete consultant.KYC; // remove nested KYC if desired
+      return consultant;
+    });
+
+    res.status(200).json({ consultants: result });
   } catch (err) {
     console.error("Error fetching consultants:", err);
     res.status(500).json({ message: "Internal server error" });
