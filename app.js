@@ -23,18 +23,20 @@ const app = express();
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const allowedOrigins = [
-  "https://hiring-ui-chi.vercel.app",
-  "http://localhost:5173", // for local dev
-  "http://localhost:3000",
+  "https://www.deserthire.com", // ✅ your custom domain
+  "https://hiring-ui-delta.vercel.app", // ✅ vercel deploy
+  "http://localhost:5173", // ✅ local dev (Vite)
+  "http://localhost:3000", // ✅ local dev (CRA)
 ];
 
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error("CORS not allowed"));
+        console.log("❌ Blocked by CORS:", origin);
+        callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
