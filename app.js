@@ -22,9 +22,21 @@ const app = express();
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+const allowedOrigins = [
+  "https://hiring-ui-chi.vercel.app",
+  "http://localhost:5173", // for local dev
+  "http://localhost:3000",
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "https://hiring-ui-chi.vercel.app/",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
     credentials: true,
   })
 );
